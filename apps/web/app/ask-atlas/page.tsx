@@ -15,7 +15,7 @@ export default function AskAtlasPage(){
     totalIncome: summary.totalIncome,
     savingsRate: summary.savingsRate,
     categories: summary.byCat,
-    holdings: portfolio.map(h=>({ticker:h.ticker, quantity:h.quantity}))
+    holdings: (portfolio as {ticker:string; quantity:number}[]).map((h:{ticker:string; quantity:number})=>({ticker:h.ticker, quantity:h.quantity}))
   }),[summary,portfolio]);
 
   const ask=async()=>{
