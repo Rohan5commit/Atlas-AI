@@ -2,15 +2,15 @@
 AI financial copilot for students and first-time investors.
 
 ## Features
-- CSV import + demo mode
+- Real CSV import (transactions + portfolio)
 - Spending intelligence, forecast, anomalies
 - Portfolio risk summary
 - Scenario planner, Ask Atlas, action plan
+- NVIDIA-hosted LLM chat endpoint grounded to app context
 
 ## Monorepo
 - `apps/web`: Next.js 15 app
 - `services/ml-api`: FastAPI analytics service
-- `data/`: sample CSV/JSON seed data
 - `docs/`: hackathon deliverables
 
 ## Setup
@@ -25,11 +25,16 @@ npm run dev:ml
 ```
 
 ## Env
+- `NVCF_API_KEY=<your_nvidia_api_key>`
 - `NEXT_PUBLIC_ML_API_URL=http://localhost:8001`
 
 ## Deploy
-- Frontend: Vercel (`apps/web`)
-- ML API: Render/Railway (`services/ml-api`)
+```bash
+npm i -g vercel
+vercel login
+vercel --prod
+```
+Deploy `services/ml-api` separately on Render/Railway.
 
-## Demo mode
-Open `/demo` and click **Use demo dataset**.
+## Runtime
+Open `/demo`, upload real CSV data, then continue through dashboard and planning flows.
