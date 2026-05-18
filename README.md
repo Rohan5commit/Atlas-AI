@@ -50,11 +50,13 @@ NEXT_PUBLIC_ML_API_URL=http://localhost:8001
 - `/summary` Action plan
 - `/architecture` Judge-facing architecture page
 
+## Production Deployment
+**Live URL:** [https://atlas-ai-sigma-six.vercel.app](https://atlas-ai-sigma-six.vercel.app)
+
 ## Run tests
 ```bash
 npm run test
 ```
 
-## Submission readiness notes
-- This repo is prepared for judging flow with deterministic analytics and grounded assistant behavior.
-- Deployment configs are included, but deployment itself is intentionally excluded in this pass.
+## Submission Readiness
+The project is fully deployed and ready for judging. All core flows, including grounded AI chat and financial analytics, are verified in production.
