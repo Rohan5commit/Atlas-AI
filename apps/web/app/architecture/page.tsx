@@ -1,0 +1,1 @@
+export default function P(){return <div className='prose prose-invert max-w-none'><h2>Architecture</h2><p>Next.js 15 frontend + route handlers + Python FastAPI analytics service with pandas/sklearn for forecast and anomaly models.</p></div>}
