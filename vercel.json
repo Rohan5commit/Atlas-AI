@@ -1,0 +1,13 @@
+{
+  "experimentalServices": {
+    "web": {
+      "entrypoint": "apps/web",
+      "routePrefix": "/",
+      "framework": "nextjs"
+    },
+    "ml-api": {
+      "entrypoint": "services/ml-api",
+      "routePrefix": "/_/ml-api"
+    }
+  }
+}

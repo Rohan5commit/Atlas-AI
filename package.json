@@ -1,0 +1,12 @@
+{
+  "name": "atlas-ai-monorepo",
+  "private": true,
+  "workspaces": ["apps/*", "packages/*"],
+  "scripts": {
+    "dev:web": "npm --workspace @atlas/web run dev",
+    "dev:ml": "cd services/ml-api && uvicorn app.main:app --reload --port 8001",
+    "build": "npm --workspace @atlas/web run build",
+    "lint": "npm --workspace @atlas/web run lint",
+    "test": "npm --workspace @atlas/web run test"
+  }
+}
