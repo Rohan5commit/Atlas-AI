@@ -12,4 +12,9 @@ describe('ingest', ()=>{
     expect(out.data.length).toBe(0);
     expect(out.errors.length).toBe(1);
   });
+  it('maps symbol and cost basis headers', ()=>{
+    const out = parsePortfolio([{symbol:'aapl', quantity:2, cost_basis:150}]);
+    expect(out.data[0].ticker).toBe('AAPL');
+    expect(out.data[0].costBasis).toBe(150);
+  });
 });
