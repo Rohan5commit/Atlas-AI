@@ -13,7 +13,9 @@ export function spendingSummary(tx: Transaction[]) {
   const totalIncome = credits.reduce((a,b)=>a+b.amount,0);
   const byCat = debits.reduce((acc,t)=>{acc[t.category||'Other']=(acc[t.category||'Other']||0)+t.amount; return acc;}, {} as Record<string,number>);
   const health = Math.max(0, Math.min(100, Math.round(40 + ((totalIncome-totalSpend)/Math.max(totalIncome,1))*40 + (1-Object.values(byCat).reduce((m,v)=>Math.max(m,v),0)/Math.max(totalSpend,1))*20)));
-  return { totalSpend,totalIncome,savingsRate: totalIncome?((totalIncome-totalSpend)/totalIncome):0, byCat, health };
+  const merchants = debits.reduce((acc,t)=>{acc[t.merchant]=(acc[t.merchant]||0)+1; return acc;}, {} as Record<string,number>);
+  const recurring = Object.entries(merchants).filter(([,c])=>c>=2).map(([m])=>m);
+  return { totalSpend,totalIncome,savingsRate: totalIncome?((totalIncome-totalSpend)/totalIncome):0, byCat, health, recurring };
 }
 
 export function simpleForecast(tx: Transaction[], days:30|90){

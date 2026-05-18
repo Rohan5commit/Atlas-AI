@@ -1,2 +1,2 @@
 # Judging Hook
-Atlas AI is innovative because it combines personal finance intelligence and beginner portfolio risk in one explainable workflow, with grounded AI outputs tied directly to user data and measurable actions.
+Atlas AI is submission-ready because it demonstrates measurable user value (spending clarity + risk explainability + concrete actions) in one coherent flow from CSV ingestion to prioritized recommendations with evidence.
