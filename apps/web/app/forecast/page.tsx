@@ -1,0 +1,2 @@
+'use client';import { useAtlas } from '@/components/state';import { simpleForecast } from '@/lib/analytics';
+export default function P(){const {transactions}=useAtlas();const f30=simpleForecast(transactions,30);const f90=simpleForecast(transactions,90);return <div className='space-y-3'><h2 className='text-3xl font-semibold'>Forecast</h2><div className='card'>30-day end: ${f30.points.at(-1)?.base.toFixed(0)}</div><div className='card'>90-day end: ${f90.points.at(-1)?.base.toFixed(0)}</div><div className='card'>{f30.drivers.join(', ')}</div></div>}
