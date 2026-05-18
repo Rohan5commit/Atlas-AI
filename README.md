@@ -1,40 +1,60 @@
 # Atlas AI
 AI financial copilot for students and first-time investors.
 
-## Features
-- Real CSV import (transactions + portfolio)
-- Spending intelligence, forecast, anomalies
-- Portfolio risk summary
-- Scenario planner, Ask Atlas, action plan
-- NVIDIA-hosted LLM chat endpoint grounded to app context
+## What it does
+Atlas AI ingests real CSV transaction and beginner portfolio data, computes explainable financial metrics, forecasts 30/90-day cashflow, flags unusual spending, explains portfolio concentration risk, supports goal scenarios, and provides grounded action recommendations.
+
+## Feature checklist
+- ✅ Real CSV import (transactions required, portfolio optional)
+- ✅ Row-level validation with error feedback (Zod)
+- ✅ Spending intelligence (category breakdown, savings rate, recurring charges)
+- ✅ Forecasts (30-day and 90-day base/best/worst)
+- ✅ Anomaly alerts with severity/confidence
+- ✅ Portfolio risk summary (value, concentration, volatility, shock)
+- ✅ Scenario planner for goal feasibility
+- ✅ Ask Atlas grounded assistant using NVIDIA API context injection
+- ✅ Action plan summary
 
 ## Monorepo
-- `apps/web`: Next.js 15 app
-- `services/ml-api`: FastAPI analytics service
-- `docs/`: hackathon deliverables
+- `apps/web` — Next.js 15 frontend + route handlers
+- `services/ml-api` — FastAPI analytics service
+- `docs/` — architecture, demo script, devpost copy, slides, credits, judging hook
 
-## Setup
+## Local setup
 ```bash
 npm install
 npm run dev:web
 ```
-In another terminal:
+In a second terminal (optional ML service):
 ```bash
-pip install -r services/ml-api/requirements.txt
+python -m pip install -r services/ml-api/requirements.txt
 npm run dev:ml
 ```
 
-## Env
-- `NVCF_API_KEY=<your_nvidia_api_key>`
-- `NEXT_PUBLIC_ML_API_URL=http://localhost:8001`
-
-## Deploy
+## Environment variables
+Create `.env.local` in repo root or `apps/web`:
 ```bash
-npm i -g vercel
-vercel login
-vercel --prod
+NVCF_API_KEY=<your_nvidia_api_key>
+NEXT_PUBLIC_ML_API_URL=http://localhost:8001
 ```
-Deploy `services/ml-api` separately on Render/Railway.
 
-## Runtime
-Open `/demo`, upload real CSV data, then continue through dashboard and planning flows.
+## Key routes
+- `/` Landing
+- `/demo` Import and validation
+- `/dashboard` KPI overview
+- `/spending` Spend breakdown
+- `/forecast` Cashflow forecast
+- `/portfolio` Portfolio risk
+- `/scenario` Goal planner
+- `/ask-atlas` Grounded Q&A
+- `/summary` Action plan
+- `/architecture` Judge-facing architecture page
+
+## Run tests
+```bash
+npm run test
+```
+
+## Submission readiness notes
+- This repo is prepared for judging flow with deterministic analytics and grounded assistant behavior.
+- Deployment configs are included, but deployment itself is intentionally excluded in this pass.
