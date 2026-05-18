@@ -1,0 +1,8 @@
+[
+{"ticker":"VOO","quantity":3,"costBasis":470},
+{"ticker":"AAPL","quantity":4,"costBasis":180},
+{"ticker":"MSFT","quantity":1.5,"costBasis":380},
+{"ticker":"NVDA","quantity":0.8,"costBasis":860},
+{"ticker":"TSLA","quantity":2,"costBasis":210},
+{"ticker":"CASH","quantity":600,"costBasis":1}
+]
