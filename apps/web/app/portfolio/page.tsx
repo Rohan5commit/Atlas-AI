@@ -1,0 +1,2 @@
+'use client';import { useAtlas } from '@/components/state';import { portfolioRisk } from '@/lib/analytics';
+export default function P(){const {portfolio}=useAtlas();const p=portfolioRisk(portfolio);return <div className='space-y-3'><h2 className='text-3xl font-semibold'>Portfolio Risk</h2><div className='card'>Concentration: {(p.concentration*100).toFixed(1)}%</div><div className='card'>Volatility: {(p.volatility*100).toFixed(1)}%</div><div className='card'>Shock -10%: ${p.shock10.toFixed(0)}</div></div>}
