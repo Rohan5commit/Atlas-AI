@@ -68,7 +68,7 @@ export default function Home() {
     setMessages((m) => [...m, { role: "user", text: q }]);
     setLoading(true);
     try {
-      const res = await fetch("/api/chat", {
+      const res = await fetch("/api/chat/atlas", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
