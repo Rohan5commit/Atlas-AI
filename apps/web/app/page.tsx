@@ -19,14 +19,16 @@ export default function Home() {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "ai",
-      text: "Hello! I'm Atlas, your grounded financial copilot. Upload a file above — then ask me anything about your cashflow, forecasts, or anomalies. Every answer is grounded strictly in your data.",
+      text: "Hello! I'm Atlas, your grounded financial copilot. Upload a CSV or XLSX file of your transactions above — then ask me anything about your cashflow, forecasts, or anomalies. Every answer is grounded strictly in your data.",
     },
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [uploaded, setUploaded] = useState(false);
   const [fileName, setFileName] = useState("");
+  const [csvText, setCsvText] = useState("");
   const [barsReady, setBarsReady] = useState(false);
+  const [kpis, setKpis] = useState<{ cashflow: string; volatility: string; anomalies: string } | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -39,18 +41,24 @@ export default function Home() {
     if (!f) return;
     setFileName(f.name);
     setLoading(true);
-    setTimeout(() => {
+    const reader = new FileReader();
+    reader.onload = async (ev) => {
+      const text = (ev.target?.result as string) ?? "";
+      setCsvText(text);
+      const rows = text.split("\n").filter((r) => r.trim()).length - 1;
       setUploaded(true);
       setBarsReady(true);
       setLoading(false);
+      setKpis({ cashflow: "Ask Atlas ↓", volatility: "Ask Atlas ↓", anomalies: "Ask Atlas ↓" });
       setMessages((m) => [
         ...m,
         {
           role: "ai",
-          text: `✓ **${f.name}** ingested. I'm ready. Ask me about your cashflow, forecast, or anomalies.`,
+          text: `✓ **${f.name}** uploaded — ${rows} transaction rows parsed. I'm ready. Ask me about your cashflow, forecast, or anomalies.`,
         },
       ]);
-    }, 800);
+    };
+    reader.readAsText(f);
   };
 
   const send = async (text?: string) => {
@@ -87,14 +95,6 @@ export default function Home() {
         html,body{height:100%;-webkit-font-smoothing:antialiased;overflow-x:hidden}
         body{font-family:'Work Sans','Helvetica Neue',sans-serif;background:#0d0d0e;color:#e8e6e0;font-size:1rem;line-height:1.6;min-height:100dvh}
         .page{display:flex;flex-direction:column;max-width:1060px;margin:0 auto;padding:2.5rem 1.5rem 3rem;gap:1.5rem}
-
-        /* hero */
-        .hero{text-align:center;padding:1rem 0 0.5rem}
-        .hero-tag{display:inline-flex;align-items:center;gap:0.5rem;padding:0.3rem 0.875rem;border-radius:9999px;border:1px solid rgba(79,152,163,0.3);background:rgba(79,152,163,0.08);font-size:0.75rem;color:#4f98a3;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;margin-bottom:1rem}
-        .hero-dot{width:6px;height:6px;border-radius:50%;background:#4f98a3;box-shadow:0 0 6px #4f98a3}
-        .hero h1{font-family:'Instrument Serif',Georgia,serif;font-size:clamp(1.875rem,1rem+3vw,3.5rem);line-height:1.08;letter-spacing:-0.025em;color:#e8e6e0;margin-bottom:0.75rem}
-        .hero h1 em{font-style:italic;color:#4f98a3}
-        .hero p{font-size:1.0625rem;color:#7a7874;max-width:50ch;margin:0 auto;line-height:1.7}
 
         /* upload */
         .upload-zone{border:1.5px dashed rgba(255,255,255,0.1);border-radius:0.875rem;padding:1.375rem 1.75rem;display:flex;align-items:center;justify-content:space-between;gap:1.25rem;background:rgba(255,255,255,0.015);cursor:pointer;transition:border-color 180ms,background 180ms}
@@ -140,7 +140,7 @@ export default function Home() {
         .msg{max-width:82%;padding:0.875rem 1rem;border-radius:0.75rem;font-size:0.9375rem;line-height:1.65;white-space:pre-wrap}
         .msg-user{align-self:flex-end;background:#4f98a3;color:#fff;border-bottom-right-radius:0.25rem}
         .msg-ai{align-self:flex-start;background:#1a1a1d;border:1px solid rgba(255,255,255,0.07);color:#e8e6e0;border-bottom-left-radius:0.25rem}
-        .msg-ai code{font-family:var(--font-mono);font-size:0.8125rem;background:#2a2a2d;padding:0.125rem 0.375rem;border-radius:0.25rem;color:#4f98a3}
+        .msg-ai code{font-family:monospace;font-size:0.8125rem;background:#2a2a2d;padding:0.125rem 0.375rem;border-radius:0.25rem;color:#4f98a3}
         .typing{display:flex;gap:5px;align-items:center;padding:0.875rem 1rem;align-self:flex-start}
         .dot{width:7px;height:7px;border-radius:50%;background:#4f98a3;animation:bounce 1.2s ease-in-out infinite}
         .dot:nth-child(2){animation-delay:.2s}.dot:nth-child(3){animation-delay:.4s}
@@ -155,35 +155,9 @@ export default function Home() {
         .send-btn{padding:0.75rem 1.25rem;border-radius:0.625rem;background:#4f98a3;color:#fff;font-weight:600;font-size:0.875rem;border:none;cursor:pointer;transition:background 180ms;font-family:inherit}
         .send-btn:hover:not(:disabled){background:#60b0bc}
         .send-btn:disabled{opacity:0.4;cursor:not-allowed}
-
-        /* footer */
-        .footer{padding-top:1rem;border-top:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:space-between;font-size:0.8125rem;color:#3a3836}
-        .footer-right{display:flex;gap:1.25rem}
-
-        @media(max-width:768px){
-          .page{padding:1.5rem 1rem 2.5rem}
-          .kpis{grid-template-columns:1fr 1fr}
-          .upload-zone{flex-direction:column;align-items:flex-start}
-          .footer{flex-direction:column;gap:0.5rem;text-align:center}
-          .footer-right{justify-content:center}
-        }
-        @media(max-width:480px){
-          .kpis{grid-template-columns:1fr}
-          .hero h1{font-size:1.875rem}
-        }
-        @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:0.01ms!important;transition-duration:0.01ms!important}}
       `}</style>
 
       <div className="page">
-        <div className="hero">
-          <div className="hero-tag">
-            <span className="hero-dot"/>
-            AlgoFest 2026 · FinTech Track
-          </div>
-          <h1>Financial intelligence,<br/><em>grounded</em> in your data.</h1>
-          <p>Upload transactions, then ask Atlas anything — cashflow, forecasts, anomalies — answered by a real AI model, grounded strictly in your file.</p>
-        </div>
-
         <div
           className={`upload-zone${uploaded ? " done" : ""}`}
           onClick={() => !uploaded && fileInputRef.current?.click()}
@@ -229,9 +203,9 @@ export default function Home() {
         ) : (
           <div className="kpis">
             {[
-              { label: "30-Day Net Cashflow", val: "$14,280", delta: "Projected P50" },
-              { label: "Forecast Volatility", val: "±$1,140", delta: "P95 band" },
-              { label: "Anomaly Alerts", val: "0 flagged", delta: "System clean" },
+              { label: "30-Day Net Cashflow", val: kpis?.cashflow ?? "—", delta: "Ask Atlas for the figure" },
+              { label: "Forecast Volatility", val: kpis?.volatility ?? "—", delta: "P95 band" },
+              { label: "Anomaly Alerts", val: kpis?.anomalies ?? "—", delta: "Ask Atlas to surface them" },
             ].map((k, i) => (
               <div key={i} className="kpi">
                 <div className="kpi-label">{k.label}</div>
@@ -275,11 +249,13 @@ export default function Home() {
             <div ref={chatEndRef}/>
           </div>
 
-          <div className="suggestions">
-            {SUGGESTED.map((s, i) => (
-              <button key={i} className="suggest-btn" onClick={() => send(s)}>{s}</button>
-            ))}
-          </div>
+          {uploaded && (
+            <div className="suggestions">
+              {SUGGESTED.map((s, i) => (
+                <button key={i} className="suggest-btn" onClick={() => send(s)}>{s}</button>
+              ))}
+            </div>
+          )}
 
           <div className="input-row">
             <input
@@ -294,16 +270,6 @@ export default function Home() {
             </button>
           </div>
         </div>
-
-        <footer className="footer">
-          <span>© 2026 Atlas AI · AlgoFest Hackathon</span>
-          <div className="footer-right">
-            <span>Next.js 14</span>
-            <span>Llama-3.1</span>
-            <span>FinTech Track</span>
-          </div>
-        </footer>
-
       </div>
     </>
   );
