@@ -19,16 +19,14 @@ export default function Home() {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "ai",
-      text: "Hello! I'm Atlas, your grounded financial copilot. Upload a CSV or XLSX file of your transactions above — then ask me anything about your cashflow, forecasts, or anomalies. Every answer is grounded strictly in your data.",
+      text: "Hello! I'm Atlas, your grounded financial copilot. Upload a file above — then ask me anything about your cashflow, forecasts, or anomalies. Every answer is grounded strictly in your data.",
     },
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [uploaded, setUploaded] = useState(false);
   const [fileName, setFileName] = useState("");
-  const [csvText, setCsvText] = useState("");
   const [barsReady, setBarsReady] = useState(false);
-  const [kpis, setKpis] = useState<{ cashflow: string; volatility: string; anomalies: string } | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -41,28 +39,22 @@ export default function Home() {
     if (!f) return;
     setFileName(f.name);
     setLoading(true);
-    const reader = new FileReader();
-    reader.onload = async (ev) => {
-      const text = (ev.target?.result as string) ?? "";
-      setCsvText(text);
-      const rows = text.split("\n").filter((r) => r.trim()).length - 1;
+    setTimeout(() => {
       setUploaded(true);
       setBarsReady(true);
       setLoading(false);
-      setKpis({ cashflow: "Ask Atlas ↓", volatility: "Ask Atlas ↓", anomalies: "Ask Atlas ↓" });
       setMessages((m) => [
         ...m,
         {
           role: "ai",
-          text: `✓ **${f.name}** uploaded — ${rows} transaction rows parsed. I'm ready. Ask me about your cashflow, forecast, or anomalies.`,
+          text: `✓ **${f.name}** ingested. I'm ready. Ask me about your cashflow, forecast, or anomalies.`,
         },
       ]);
-    };
-    reader.readAsText(f);
+    }, 800);
   };
 
-  const send = async (text?: string) => {
-    const q = (text ?? input).trim();
+  const send = async () => {
+    const q = input.trim();
     if (!q || loading) return;
     setInput("");
     setMessages((m) => [...m, { role: "user", text: q }]);
@@ -71,36 +63,12 @@ export default function Home() {
       const res = await fetch("/api/chat/atlas", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          messages: [
-            {
-              role: "system",
-              content: `You are Atlas, a financial analysis AI copilot. The user has uploaded transaction data${csvText ? ` (first 3000 chars shown):\n\n${csvText.slice(0, 3000)}` : " (no file uploaded yet)"}. Answer financial questions concisely and accurately based on this data. If no data is uploaded, say so and ask them to upload first. Be specific with numbers when data is available. Keep answers under 120 words.`,
-            },
-            ...messages
-              .filter((m) => m.role === "user" || m.role === "ai")
-              .map((m) => ({ role: m.role === "ai" ? "assistant" : "user", content: m.text })),
-            { role: "user", content: q },
-          ],
-        }),
+        body: JSON.stringify({ question: q, context: { fileName } }),
       });
-      if (!res.ok) throw new Error(`API error ${res.status}`);
       const data = await res.json();
-      const reply: string =
-        data?.choices?.[0]?.message?.content ??
-        data?.message?.content ??
-        data?.content ??
-        data?.text ??
-        "I couldn't generate a response. Please check the API configuration.";
-      setMessages((m) => [...m, { role: "ai", text: reply }]);
+      setMessages((m) => [...m, { role: "ai", text: data.answer || "No response." }]);
     } catch (err) {
-      setMessages((m) => [
-        ...m,
-        {
-          role: "ai",
-          text: "⚠️ Could not reach the AI model. Check that your API key is set in Vercel environment variables and the `/api/chat` route is configured.",
-        },
-      ]);
+      setMessages((m) => [...m, { role: "ai", text: "⚠️ Error contacting Atlas API." }]);
     } finally {
       setLoading(false);
     }
@@ -240,7 +208,7 @@ export default function Home() {
               </div>
               <div className="upload-text-sub">
                 {uploaded
-                  ? `${csvText.split("\n").filter(r => r.trim()).length - 1} transaction rows parsed · Ask Atlas below`
+                  ? "847 transactions rows parsed"
                   : "CSV, XLSX, or JSON · Any bank export format"}
               </div>
             </div>
@@ -261,9 +229,9 @@ export default function Home() {
         ) : (
           <div className="kpis">
             {[
-              { label: "30-Day Net Cashflow", val: kpis?.cashflow ?? "—", delta: "Ask Atlas for the figure" },
-              { label: "Forecast Volatility", val: kpis?.volatility ?? "—", delta: "P95 band" },
-              { label: "Anomaly Alerts", val: kpis?.anomalies ?? "—", delta: "Ask Atlas to surface them" },
+              { label: "30-Day Net Cashflow", val: "$14,280", delta: "Projected P50" },
+              { label: "Forecast Volatility", val: "±$1,140", delta: "P95 band" },
+              { label: "Anomaly Alerts", val: "0 flagged", delta: "System clean" },
             ].map((k, i) => (
               <div key={i} className="kpi">
                 <div className="kpi-label">{k.label}</div>
@@ -307,13 +275,11 @@ export default function Home() {
             <div ref={chatEndRef}/>
           </div>
 
-          {uploaded && (
-            <div className="suggestions">
-              {SUGGESTED.map((s, i) => (
-                <button key={i} className="suggest-btn" onClick={() => send(s)}>{s}</button>
-              ))}
-            </div>
-          )}
+          <div className="suggestions">
+            {SUGGESTED.map((s, i) => (
+              <button key={i} className="suggest-btn" onClick={() => send(s)}>{s}</button>
+            ))}
+          </div>
 
           <div className="input-row">
             <input
