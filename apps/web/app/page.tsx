@@ -53,8 +53,8 @@ export default function Home() {
     }, 800);
   };
 
-  const send = async () => {
-    const q = input.trim();
+  const send = async (text?: string) => {
+    const q = (text ?? input).trim();
     if (!q || loading) return;
     setInput("");
     setMessages((m) => [...m, { role: "user", text: q }]);
