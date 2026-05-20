@@ -1,5 +1,6 @@
 'use client';
 import { useMemo, useState } from 'react';
+import { parseTransactions } from '@/lib/ingest';
 import { useAtlas } from '@/components/state';
 import { spendingSummary, detectAnomalies } from '@/lib/analytics';
 
@@ -24,7 +25,11 @@ export default function AskAtlasPage(){
     setQ(query);
     setLoading(true);
     try{
-      const res=await fetch('/api/chat/atlas',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question:query,context})});
+      const res=await fetch('/api/chat/atlas',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({question:query,context,transactions})
+      });
       const data=await res.json();
       setAnswer(data.answer || data.error || 'Insufficient data');
     } finally { setLoading(false); }

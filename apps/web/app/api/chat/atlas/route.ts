@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
+import { spendingSummary, detectAnomalies } from '@/lib/analytics';
 
 export async function POST(req: Request){
-  const { question, context } = await req.json().catch(()=>({question:'',context:{}}));
+  const { question, context, transactions } = await req.json().catch(()=>({question:'',context:{},transactions:[] }));
   const apiKey = process.env.NVCF_API_KEY;
   if(!apiKey) return NextResponse.json({ error:'NVCF_API_KEY missing' }, { status: 500 });
 
