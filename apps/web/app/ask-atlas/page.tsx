@@ -1,7 +1,7 @@
 'use client';
 import { useMemo, useState } from 'react';
 import { useAtlas } from '@/components/state';
-import { spendingSummary } from '@/lib/analytics';
+import { spendingSummary, detectAnomalies } from '@/lib/analytics';
 
 export default function AskAtlasPage(){
   const [q,setQ]=useState('');
@@ -9,14 +9,16 @@ export default function AskAtlasPage(){
   const [loading,setLoading]=useState(false);
   const {transactions,portfolio}=useAtlas();
   const summary = spendingSummary(transactions);
+  const anomalies = detectAnomalies(transactions);
   const context = useMemo(()=>({
     health: summary.health,
     totalSpend: summary.totalSpend,
     totalIncome: summary.totalIncome,
     savingsRate: summary.savingsRate,
     categories: summary.byCat,
-    holdings: (portfolio as {ticker:string; quantity:number}[]).map((h:{ticker:string; quantity:number})=>({ticker:h.ticker, quantity:h.quantity}))
-  }),[summary,portfolio]);
+    holdings: (portfolio as {ticker:string; quantity:number}[]).map((h:{ticker:string; quantity:number})=>({ticker:h.ticker, quantity:h.quantity})),
+    anomalies
+  }),[summary,portfolio,transactions]);
 
   const ask=async(query:string)=>{
     setQ(query);
