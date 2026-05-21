@@ -1,6 +1,5 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
-import Papa from "papaparse";
 
 interface Message {
   role: "user" | "ai";
@@ -15,6 +14,48 @@ const SUGGESTED = [
 ];
 
 const BAR_HEIGHTS = [55, 68, 48, 77, 85, 62, 91, 79, 72, 94, 86, 100, 91, 83, 96];
+
+/**
+ * RFC-4180 compliant CSV parser that handles:
+ * - Quoted fields with embedded commas
+ * - Quoted fields with embedded newlines
+ * - Escaped double-quotes ("")
+ */
+function parseCSV(text: string): Record<string, string>[] {
+  const rows: string[][] = [];
+  let cur = "";
+  let inQuote = false;
+  let fields: string[] = [];
+
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    const next = text[i + 1];
+
+    if (inQuote) {
+      if (ch === '"' && next === '"') { cur += '"'; i++; }
+      else if (ch === '"') { inQuote = false; }
+      else { cur += ch; }
+    } else {
+      if (ch === '"') { inQuote = true; }
+      else if (ch === ',') { fields.push(cur.trim()); cur = ""; }
+      else if (ch === '\n' || (ch === '\r' && next === '\n')) {
+        if (ch === '\r') i++;
+        fields.push(cur.trim());
+        if (fields.some(f => f !== "")) rows.push(fields);
+        fields = []; cur = "";
+      } else { cur += ch; }
+    }
+  }
+  // last field/row
+  fields.push(cur.trim());
+  if (fields.some(f => f !== "")) rows.push(fields);
+
+  if (rows.length < 2) return [];
+  const headers = rows[0].map(h => h.toLowerCase().replace(/[^a-z0-9]/g, ""));
+  return rows.slice(1).map(row =>
+    Object.fromEntries(headers.map((h, i) => [h, row[i] ?? ""]))
+  );
+}
 
 export default function Home() {
   const [messages, setMessages] = useState<Message[]>([
@@ -46,7 +87,8 @@ export default function Home() {
     reader.onload = async (ev) => {
       const text = (ev.target?.result as string) ?? "";
       setCsvText(text);
-      const rows = text.split("\n").filter((r) => r.trim()).length - 1;
+      const rows = parseCSV(text);
+      const rowCount = rows.length;
       setUploaded(true);
       setBarsReady(true);
       setLoading(false);
@@ -55,7 +97,7 @@ export default function Home() {
         ...m,
         {
           role: "ai",
-          text: `✓ **${f.name}** uploaded — ${rows} transaction rows parsed. I'm ready. Ask me about your cashflow, forecast, or anomalies.`,
+          text: `✓ **${f.name}** uploaded — ${rowCount} transaction rows parsed. I'm ready. Ask me about your cashflow, forecast, or anomalies.`,
         },
       ]);
     };
@@ -69,15 +111,46 @@ export default function Home() {
     setMessages((m) => [...m, { role: "user", text: q }]);
     setLoading(true);
     try {
-      // Parse CSV into Transaction rows before sending
-      const parseResult = Papa.parse(csvText, { header: true, skipEmptyLines: true });
-      const transactions = (parseResult.data as any[]).map(row => ({
-        date: row.date ?? "",
-        merchant: row.merchant ?? row.description ?? "",
-        amount: parseFloat(row.amount ?? "0") || 0,
-        type: (parseFloat(row.amount ?? "0") < 0) ? "debit" : "credit",
-        category: row.category ?? "",
-      }));
+      // Use RFC-4180 parser — handles quoted commas, escaped quotes, etc.
+      const parsedRows = parseCSV(csvText);
+
+      const transactions = parsedRows
+        .map(r => {
+          // Resolve amount — try common column name variants
+          const rawAmt = r.amount ?? r.debitamount ?? r.creditamount ?? r.value ?? r.sum ?? "0";
+          // Strip currency symbols, spaces, commas used as thousand separators
+          const cleaned = rawAmt.replace(/[^\d.-]/g, "");
+          const numeric = parseFloat(cleaned);
+          const amount = isNaN(numeric) ? 0 : numeric;
+
+          // Negative = debit (money out), positive = credit (money in)
+          // Also respect an explicit type/transactiontype column if present
+          const explicitType = (r.type ?? r.transactiontype ?? "").toLowerCase();
+          let type: "debit" | "credit";
+          if (explicitType === "debit" || explicitType === "dr") {
+            type = "debit";
+          } else if (explicitType === "credit" || explicitType === "cr") {
+            type = "credit";
+          } else {
+            type = amount < 0 ? "debit" : "credit";
+          }
+
+          // Resolve merchant / description
+          const merchant =
+            r.merchant ?? r.description ?? r.merchantname ?? r.payee ?? r.reference ?? "";
+
+          // Resolve date
+          const date = r.date ?? r.transactiondate ?? r.valuedate ?? r.posteddate ?? "";
+
+          return {
+            date,
+            merchant,
+            amount: Math.abs(amount), // always positive — type carries the direction
+            type,
+            category: r.category ?? r.transactioncategory ?? "",
+          };
+        })
+        .filter(t => t.amount > 0 && t.date !== ""); // drop zero/headerless rows
 
       const res = await fetch("/api/chat/atlas", {
         method: "POST",
@@ -86,7 +159,7 @@ export default function Home() {
       });
       const data = await res.json();
       setMessages((m) => [...m, { role: "ai", text: data.answer || "No response." }]);
-    } catch (err) {
+    } catch {
       setMessages((m) => [...m, { role: "ai", text: "⚠️ Error contacting Atlas API." }]);
     } finally {
       setLoading(false);
@@ -193,7 +266,7 @@ export default function Home() {
               </div>
               <div className="upload-text-sub">
                 {uploaded
-                  ? "847 transactions rows parsed"
+                  ? `${csvText ? parseCSV(csvText).length : 0} transaction rows parsed`
                   : "CSV, XLSX, or JSON · Any bank export format"}
               </div>
             </div>
