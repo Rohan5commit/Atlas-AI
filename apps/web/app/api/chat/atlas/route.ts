@@ -14,19 +14,15 @@ export async function POST(req: Request) {
 
   const apiKey = process.env.NVCF_API_KEY;
   if (!apiKey) return NextResponse.json({ error: 'NVCF_API_KEY missing' }, { status: 500 });
-  if (!rawTransactions.length) {
-    return NextResponse.json({ answer: "No transaction data received. Please upload your file first." });
-  }
+  
+  // Removed strict requirement: Allow LLM to handle analysis if data is provided.
+  // if (!rawTransactions.length) ...
 
-  // 1. Normalize: assigns categories via categoryMap
   const transactions = normalizeTransactions(rawTransactions);
-
-  // 2. Compute all analytics
   const summary = spendingSummary(transactions);
   const anomalies = detectAnomalies(transactions);
   const forecast = simpleForecast(transactions, 30);
 
-  // 3. Build a token-efficient context — cap anomalies at 15 to avoid blowing max_tokens
   const context = {
     transactionCount: transactions.length,
     summary: {
@@ -37,30 +33,33 @@ export async function POST(req: Request) {
       spendByCategory: summary.byCat,
       recurringMerchants: summary.recurring,
     },
-    anomalies: anomalies.slice(0, 15).map((a) => ({
+    // Send top 50 anomalies, more comprehensive than 15
+    anomalies: anomalies.slice(0, 50).map((a) => ({
       merchant: a.merchant,
       amount: a.amount,
       reason: a.reason,
       severity: a.severity,
+      date: a.date,
     })),
     forecast: {
       horizon: forecast.horizon,
-      points: forecast.points.slice(0, 7), // Just weekly snapshots
+      points: forecast.points, 
     },
   };
 
-  const prompt = `You are Atlas AI, a grounded financial copilot.
+  const prompt = `You are Atlas AI, a financial copilot. 
+Analyze the provided JSON transaction data summary to answer the user question.
 
-STRICT GUIDELINES:
-1. Use ONLY the provided context. If the data is absent, say: "I don't have enough data in your current upload to answer this accurately."
-2. Be concise. No conversational filler.
-3. Always include currency units (e.g. "$" ).
-4. For anomaly detection: flag transactions where the amount is more than 2 standard deviations from the mean, or where the merchant appears only once with a large amount.
-
-Context JSON:
+CONTEXT JSON:
 ${JSON.stringify(context)}
 
-User Question: ${question}`;
+USER QUESTION: ${question}
+
+INSTRUCTIONS:
+1. Use the provided context data as the primary source of truth.
+2. If the user asks about anomalies, summarize the anomaly list provided in the JSON context.
+3. If no data exists in the context (transactionCount === 0), respond: "I don't have enough data in your current upload to answer this accurately."
+4. Be concise and professional. Use currency units like "$".`;
 
   const res = await fetch('https://integrate.api.nvidia.com/v1/chat/completions', {
     method: 'POST',
@@ -72,12 +71,12 @@ User Question: ${question}`;
         { role: 'user', content: question },
       ],
       temperature: 0.1,
-      max_tokens: 400,
+      max_tokens: 800,
     }),
   });
 
   if (!res.ok) return NextResponse.json({ error: 'NVIDIA inference call failed' }, { status: 502 });
   const data = await res.json();
   const answer = data?.choices?.[0]?.message?.content ?? 'Insufficient data to answer confidently.';
-  return NextResponse.json({ answer, evidence: ['Grounded context from Atlas computed metrics'] });
+  return NextResponse.json({ answer });
 }
