@@ -9,9 +9,9 @@ export function normalizeTransactions(rows: Transaction[]) {
 export function spendingSummary(tx: Transaction[]) {
   const debits = tx.filter(t=>t.type==='debit');
   const credits = tx.filter(t=>t.type==='credit');
-  const totalSpend = debits.reduce((a,b)=>a+b.amount,0);
+  const totalSpend = debits.reduce((a,b)=>a+Math.abs(b.amount),0);
   const totalIncome = credits.reduce((a,b)=>a+b.amount,0);
-  const byCat = debits.reduce((acc,t)=>{acc[t.category||'Other']=(acc[t.category||'Other']||0)+t.amount; return acc;}, {} as Record<string,number>);
+  const byCat = debits.reduce((acc,t)=>{acc[t.category||'Other']=(acc[t.category||'Other']||0)+Math.abs(t.amount); return acc;}, {} as Record<string,number>);
   const health = Math.max(0, Math.min(100, Math.round(40 + ((totalIncome-totalSpend)/Math.max(totalIncome,1))*40 + (1-Object.values(byCat).reduce((m,v)=>Math.max(m,v),0)/Math.max(totalSpend,1))*20)));
   const merchants = debits.reduce((acc,t)=>{acc[t.merchant]=(acc[t.merchant]||0)+1; return acc;}, {} as Record<string,number>);
   const recurring = Object.entries(merchants).filter(([,c])=>c>=2).map(([m])=>m);
@@ -19,7 +19,8 @@ export function spendingSummary(tx: Transaction[]) {
 }
 
 export function simpleForecast(tx: Transaction[], days:30|90){
-  const daily = (spendingSummary(tx).totalIncome - spendingSummary(tx).totalSpend)/180;
+  const summary = spendingSummary(tx);
+  const daily = (summary.totalIncome - summary.totalSpend)/180;
   let balance=2000;
   const points=[] as {date:string;base:number;best:number;worst:number}[];
   for(let i=1;i<=days;i++){ balance += daily; points.push({date:`Day ${i}`, base:+balance.toFixed(2), best:+(balance+Math.sqrt(i)*12).toFixed(2), worst:+(balance-Math.sqrt(i)*20).toFixed(2)}); }
@@ -27,7 +28,7 @@ export function simpleForecast(tx: Transaction[], days:30|90){
 }
 
 export function detectAnomalies(tx: Transaction[]){
-  const debits = tx.filter(t=>t.type==='debit');
+  const debits = tx.filter(t=>t.type==='debit').map(t => ({...t, amount: Math.abs(t.amount)}));
   const mean = debits.reduce((a,b)=>a+b.amount,0)/Math.max(debits.length,1);
   const sd = Math.sqrt(debits.reduce((a,b)=>a+Math.pow(b.amount-mean,2),0)/Math.max(debits.length,1));
   return debits.filter(t=>t.amount>mean+1.5*sd).map((t,i)=>({id:`a${i}`,reason:`Amount ${Math.round((t.amount/mean)*100)}% of normal debit size`,severity:t.amount>mean+2*sd?'high':'medium',confidence:Math.min(0.95,0.65+(t.amount-mean)/(4*sd||1)),merchant:t.merchant,amount:t.amount,date:t.date}));
