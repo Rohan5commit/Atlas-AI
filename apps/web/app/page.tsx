@@ -132,7 +132,9 @@ export default function Home() {
           } else if (explicitType === "credit" || explicitType === "cr") {
             type = "credit";
           } else {
-            type = amount < 0 ? "debit" : "credit";
+            // For positive-amount CSVs, treat everything as debit (spending) by default
+            // so anomaly detection, spend summary, and category analysis all work
+            type = "debit";
           }
 
           // Resolve merchant / description
