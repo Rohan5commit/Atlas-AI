@@ -3,11 +3,7 @@ import { Transaction } from '@/lib/types';
 import { normalizeTransactions, generateDataSummary } from '@/lib/analytics';
 
 export async function POST(req: Request) {
-  const body = await req.json().catch(() => ({ question: '', transactions: [] }));
-  const question: string = body.question ?? '';
-  const rawTransactions: Transaction[] = body.transactions ?? [];
-  const transactions = normalizeTransactions(rawTransactions);
-  const summary = generateDataSummary(transactions);
+  const { question, dataSummary } = await req.json().catch(() => ({ question: '', dataSummary: null }));
 
   const apiKey = process.env.NVCF_API_KEY;
   if (!apiKey) return NextResponse.json({ error: 'NVCF_API_KEY missing' }, { status: 500 });
@@ -16,16 +12,18 @@ export async function POST(req: Request) {
   const isSimple = simpleKeywords.some(kw => question.toLowerCase().includes(kw));
   const model = isSimple ? "meta/llama-3.1-8b-instruct" : "meta/llama-3.1-70b-instruct";
 
-  const systemPrompt = `You are Atlas, a grounded financial copilot. Answer questions strictly based on the data below. Do not speculate or use outside knowledge.
+  const systemPrompt = dataSummary
+    ? `You are Atlas, a grounded financial copilot. Answer questions strictly based on the data below. Do not speculate or use outside knowledge.
 
 ACCOUNT SUMMARY:
-${JSON.stringify(summary, null, 0)}
+${JSON.stringify(dataSummary, null, 0)}
 
 Rules:
 - Be concise and direct
 - Use bullet points for lists
 - Format currency as USD with 2 decimal places
-- If the answer isn't in the data, say "This information isn't available in your statement"`;
+- If the answer isn't in the data, say "This information isn't available in your statement"`
+    : `You are Atlas. No data has been uploaded yet. Ask the user to upload a CSV or XLSX file.`;
 
   const res = await fetch('https://integrate.api.nvidia.com/v1/chat/completions', {
     method: 'POST',

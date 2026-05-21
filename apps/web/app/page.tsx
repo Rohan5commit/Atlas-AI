@@ -1,5 +1,7 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
+import Papa from "papaparse";
+import { generateDataSummary } from "@/lib/analytics";
 
 interface Message {
   role: "user" | "ai";
@@ -65,6 +67,7 @@ export default function Home() {
     },
   ]);
   const [input, setInput] = useState("");
+  const [dataSummary, setDataSummary] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [uploaded, setUploaded] = useState(false);
   const [fileName, setFileName] = useState("");
@@ -87,8 +90,28 @@ export default function Home() {
     reader.onload = async (ev) => {
       const text = (ev.target?.result as string) ?? "";
       csvTextRef.current = text;
-      const rows = parseCSV(text);
-      const rowCount = rows.length;
+      const parsedRows = parseCSV(text);
+      const transactions = parsedRows
+        .map(r => {
+          const rawAmt = r.amount ?? r.debitamount ?? r.creditamount ?? r.value ?? r.sum ?? "0";
+          const cleaned = rawAmt.replace(/[^\d.-]/g, "");
+          const numeric = parseFloat(cleaned);
+          const amount = isNaN(numeric) ? 0 : numeric;
+          const explicitType = (r.type ?? r.transactiontype ?? "").toLowerCase();
+          let type: "debit" | "credit" = explicitType === "debit" || explicitType === "dr" ? "debit" : explicitType === "credit" || explicitType === "cr" ? "credit" : "debit";
+          return {
+            date: r.date ?? r.transactiondate ?? "",
+            merchant: r.merchant ?? r.description ?? "",
+            amount: Math.abs(amount),
+            type,
+            category: r.category ?? "",
+          };
+        })
+        .filter(t => t.amount > 0 && t.date !== "");
+        
+      setDataSummary(generateDataSummary(transactions));
+
+      const rowCount = transactions.length;
       setUploaded(true);
       setBarsReady(true);
       setLoading(false);
@@ -134,7 +157,7 @@ export default function Home() {
       const res = await fetch("/api/chat/atlas", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question: q, transactions }),
+        body: JSON.stringify({ question: q, dataSummary }),
       });
 
       if (!res.body) throw new Error("No response body");
