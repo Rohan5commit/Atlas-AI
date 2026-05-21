@@ -5,7 +5,7 @@ import { generateDataSummary } from "@/lib/analytics";
 
 interface Message {
   role: "user" | "ai";
-  text: string;
+  content: string;
 }
 
 const SUGGESTED = [
@@ -63,7 +63,7 @@ export default function Home() {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "ai",
-      text: "Hello! I'm Atlas, your grounded financial copilot. Upload a CSV or XLSX file of your transactions above — then ask me anything about your cashflow, forecasts, or anomalies. Every answer is grounded strictly in your data.",
+      content: "Hello! I'm Atlas, your grounded financial copilot. Upload a CSV or XLSX file of your transactions above — then ask me anything about your cashflow, forecasts, or anomalies. Every answer is grounded strictly in your data.",
     },
   ]);
   const [input, setInput] = useState("");
@@ -120,7 +120,7 @@ export default function Home() {
         ...m,
         {
           role: "ai",
-          text: `✓ **${f.name}** uploaded — ${rowCount} transaction rows parsed. I'm ready. Ask me about your cashflow, forecast, or anomalies.`,
+          content: `✓ **${f.name}** uploaded — ${rowCount} transaction rows parsed. I'm ready. Ask me about your cashflow, forecast, or anomalies.`,
         },
       ]);
     };
@@ -133,8 +133,8 @@ export default function Home() {
     setInput("");
     
     // Add user message and empty assistant message
-    const newMessages = [...messages, { role: "user" as const, text: q }];
-    setMessages([...newMessages, { role: "ai" as const, text: "" }]);
+    const newMessages = [...messages, { role: "user" as const, content: q }];
+    setMessages([...newMessages, { role: "ai" as const, content: "" }]);
     setLoading(true);
 
     try {
@@ -158,7 +158,7 @@ export default function Home() {
           const updated = [...prev];
           updated[updated.length - 1] = {
             role: "ai",
-            text: updated[updated.length - 1].text + token,
+            content: updated[updated.length - 1].content + token,
           };
           return updated;
         });
@@ -166,7 +166,7 @@ export default function Home() {
     } catch {
       setMessages((m) => {
         const updated = [...m];
-        updated[updated.length - 1] = { role: "ai", text: "⚠️ Error contacting Atlas API." };
+        updated[updated.length - 1] = { role: "ai", content: "⚠️ Error contacting Atlas API." };
         return updated;
       });
     } finally {
@@ -331,7 +331,7 @@ export default function Home() {
         <div className="chat-box">
           <div className="messages">
             {messages.map((m, i) => (
-              <div key={i} className={`msg msg-${m.role}`}>{renderText(m.text)}</div>
+              <div key={i} className={`msg msg-${m.role}`}>{renderText(m.content)}</div>
             ))}
             {loading && (
               <div className="typing">
