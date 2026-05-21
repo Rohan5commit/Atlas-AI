@@ -3,7 +3,14 @@ import { Transaction } from '@/lib/types';
 import { normalizeTransactions, generateDataSummary } from '@/lib/analytics';
 
 export async function POST(req: Request) {
-  const { question, dataSummary } = await req.json().catch(() => ({ question: '', dataSummary: null }));
+  const body = await req.json();
+  console.log('=== ATLAS DEBUG ===');
+  console.log('Keys received:', Object.keys(body));
+  console.log('dataSummary:', body.dataSummary ? 'PRESENT' : 'MISSING');
+  console.log('messages count:', body.messages?.length);
+  console.log('===================');
+
+  const { question, dataSummary } = body;
 
   const apiKey = process.env.NVCF_API_KEY;
   if (!apiKey) return NextResponse.json({ error: 'NVCF_API_KEY missing' }, { status: 500 });
