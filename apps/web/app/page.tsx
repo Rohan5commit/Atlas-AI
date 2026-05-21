@@ -157,7 +157,7 @@ export default function Home() {
       const res = await fetch("/api/chat/atlas", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question: q, messages: newMessages, dataSummary }),
+        body: JSON.stringify({ question: q, messages: [...messages, { role: "user", text: q }], dataSummary }),
       });
 
       if (!res.body) throw new Error("No response body");
