@@ -123,3 +123,27 @@ export function portfolioRisk(holdings: PortfolioHolding[]) {
     drawdown:     0.15 + conc * 0.25,
   };
 }
+
+export function generateDataSummary(tx: Transaction[]) {
+  const summary = spendingSummary(tx);
+  const anomalies = detectAnomalies(tx);
+  const forecast = simpleForecast(tx, 30);
+  
+  const sortedByVal = [...tx].sort((a, b) => Math.abs(b.amount) - Math.abs(a.amount));
+  
+  return {
+    totalRows: tx.length,
+    dateRange: { 
+      from: tx.length ? new Date(Math.min(...tx.map(t => new Date(t.date).getTime()))).toISOString().split('T')[0] : '',
+      to: tx.length ? new Date(Math.max(...tx.map(t => new Date(t.date).getTime()))).toISOString().split('T')[0] : ''
+    },
+    totalInflow: summary.totalIncome,
+    totalOutflow: summary.totalSpend,
+    netCashflow: summary.totalIncome - summary.totalSpend,
+    topCategories: Object.entries(summary.byCat).sort((a,b) => b[1] - a[1]).slice(0, 10).map(([name, total]) => ({ name, total })),
+    largestTransactions: sortedByVal.slice(0, 10).map(t => ({ date: t.date, description: t.merchant, amount: Math.abs(t.amount) })),
+    anomaliesSummary: anomalies.length ? `Detected ${anomalies.length} anomalies.` : 'No significant anomalies.',
+    forecastSummary: `Net cashflow trend projects a balance shift of $${(forecast.points[forecast.points.length-1].base - 2000).toFixed(2)} over 30 days.`
+  };
+}
+

@@ -108,61 +108,56 @@ export default function Home() {
     const q = (text ?? input).trim();
     if (!q || loading) return;
     setInput("");
-    setMessages((m) => [...m, { role: "user", text: q }]);
+    setMessages((m) => [...m, { role: "user", text: q }, { role: "ai", text: "" }]);
     setLoading(true);
-    try {
-      // Use RFC-4180 parser — handles quoted commas, escaped quotes, etc.
-      const parsedRows = parseCSV(csvTextRef.current);
 
+    try {
+      const parsedRows = parseCSV(csvTextRef.current);
       const transactions = parsedRows
         .map(r => {
-          // Resolve amount — try common column name variants
           const rawAmt = r.amount ?? r.debitamount ?? r.creditamount ?? r.value ?? r.sum ?? "0";
-          // Strip currency symbols, spaces, commas used as thousand separators
           const cleaned = rawAmt.replace(/[^\d.-]/g, "");
           const numeric = parseFloat(cleaned);
           const amount = isNaN(numeric) ? 0 : numeric;
-
-          // Negative = debit (money out), positive = credit (money in)
-          // Also respect an explicit type/transactiontype column if present
           const explicitType = (r.type ?? r.transactiontype ?? "").toLowerCase();
-          let type: "debit" | "credit";
-          if (explicitType === "debit" || explicitType === "dr") {
-            type = "debit";
-          } else if (explicitType === "credit" || explicitType === "cr") {
-            type = "credit";
-          } else {
-            // For positive-amount CSVs, treat everything as debit (spending) by default
-            // so anomaly detection, spend summary, and category analysis all work
-            type = "debit";
-          }
-
-          // Resolve merchant / description
-          const merchant =
-            r.merchant ?? r.description ?? r.merchantname ?? r.payee ?? r.reference ?? "";
-
-          // Resolve date
-          const date = r.date ?? r.transactiondate ?? r.valuedate ?? r.posteddate ?? "";
-
+          let type: "debit" | "credit" = explicitType === "debit" || explicitType === "dr" ? "debit" : explicitType === "credit" || explicitType === "cr" ? "credit" : "debit";
           return {
-            date,
-            merchant,
-            amount: Math.abs(amount), // always positive — type carries the direction
+            date: r.date ?? r.transactiondate ?? "",
+            merchant: r.merchant ?? r.description ?? "",
+            amount: Math.abs(amount),
             type,
-            category: r.category ?? r.transactioncategory ?? "",
+            category: r.category ?? "",
           };
         })
-        .filter(t => t.amount > 0 && t.date !== ""); // drop zero/headerless rows
+        .filter(t => t.amount > 0 && t.date !== "");
 
       const res = await fetch("/api/chat/atlas", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ question: q, transactions }),
       });
-      const data = await res.json();
-      setMessages((m) => [...m, { role: "ai", text: data.answer || "No response." }]);
+
+      if (!res.body) throw new Error("No response body");
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      
+      let done = false;
+      while (!done) {
+        const { value, done: doneReading } = await reader.read();
+        done = doneReading;
+        const chunkValue = decoder.decode(value);
+        setMessages((m) => {
+          const newMessages = [...m];
+          newMessages[newMessages.length - 1].text += chunkValue;
+          return newMessages;
+        });
+      }
     } catch {
-      setMessages((m) => [...m, { role: "ai", text: "⚠️ Error contacting Atlas API." }]);
+      setMessages((m) => {
+        const newMessages = [...m];
+        newMessages[newMessages.length - 1].text = "⚠️ Error contacting Atlas API.";
+        return newMessages;
+      });
     } finally {
       setLoading(false);
     }
