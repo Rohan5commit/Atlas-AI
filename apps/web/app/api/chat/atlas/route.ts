@@ -47,19 +47,18 @@ export async function POST(req: Request) {
     },
   };
 
-  const prompt = `You are Atlas AI, a financial copilot. 
-Analyze the provided JSON transaction data summary to answer the user question.
+  const prompt = `You are Atlas AI, a financial copilot.
+The user has uploaded ${transactions.length} transactions. Analyze the JSON below and answer their question.
 
 CONTEXT JSON:
 ${JSON.stringify(context)}
 
 USER QUESTION: ${question}
 
-INSTRUCTIONS:
-1. Use the provided context data as the primary source of truth.
-2. If the user asks about anomalies, summarize the anomaly list provided in the JSON context.
-3. If no data exists in the context (transactionCount === 0), respond: "I don't have enough data in your current upload to answer this accurately."
-4. Be concise and professional. Use currency units like "$".`;
+RULES:
+1. Always answer using the context data above. Never say you lack data.
+2. For anomaly questions: if anomalies array has items, list them. If anomalies array is empty, say "No statistical anomalies detected — all transactions are within normal range" and mention the top 3 highest spend transactions from the data instead.
+3. Be concise and professional. Use $ for currency.`;
 
   const res = await fetch('https://integrate.api.nvidia.com/v1/chat/completions', {
     method: 'POST',
