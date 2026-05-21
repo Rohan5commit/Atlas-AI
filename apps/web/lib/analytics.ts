@@ -19,8 +19,13 @@ export function spendingSummary(tx: Transaction[]) {
 }
 
 export function simpleForecast(tx: Transaction[], days:30|90){
+  const dates = tx.map(t => new Date(t.date)).filter(d => !isNaN(d.getTime()));
+  const minDate = new Date(Math.min(...dates.map(d => d.getTime())));
+  const maxDate = new Date(Math.max(...dates.map(d => d.getTime())));
+  const dayDiff = Math.max(1, Math.ceil((maxDate.getTime() - minDate.getTime()) / (1000 * 60 * 60 * 24)));
+  
   const summary = spendingSummary(tx);
-  const daily = (summary.totalIncome - summary.totalSpend)/180;
+  const daily = (summary.totalIncome - summary.totalSpend) / dayDiff;
   let balance=2000;
   const points=[] as {date:string;base:number;best:number;worst:number}[];
   for(let i=1;i<=days;i++){ balance += daily; points.push({date:`Day ${i}`, base:+balance.toFixed(2), best:+(balance+Math.sqrt(i)*12).toFixed(2), worst:+(balance-Math.sqrt(i)*20).toFixed(2)}); }
