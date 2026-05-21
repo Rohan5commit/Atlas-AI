@@ -1,5 +1,6 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
+import Papa from "papaparse";
 
 interface Message {
   role: "user" | "ai";
@@ -69,18 +70,14 @@ export default function Home() {
     setLoading(true);
     try {
       // Parse CSV into Transaction rows before sending
-      const rows = csvText.split("\n").filter(r => r.trim());
-      const headers = rows[0]?.split(",").map(h => h.trim().toLowerCase()) ?? [];
-      const transactions = rows.slice(1).map(row => {
-        const vals = row.split(",");
-        return {
-          date: vals[headers.indexOf("date")] ?? "",
-          merchant: vals[headers.indexOf("merchant")] ?? vals[headers.indexOf("description")] ?? "",
-          amount: parseFloat(vals[headers.indexOf("amount")] ?? "0") || 0,
-          type: parseFloat(vals[headers.indexOf("amount")] ?? "0") < 0 ? "debit" : "credit",
-          category: vals[headers.indexOf("category")] ?? "",
-        };
-      });
+      const parseResult = Papa.parse(csvText, { header: true, skipEmptyLines: true });
+      const transactions = (parseResult.data as any[]).map(row => ({
+        date: row.date ?? "",
+        merchant: row.merchant ?? row.description ?? "",
+        amount: parseFloat(row.amount ?? "0") || 0,
+        type: (parseFloat(row.amount ?? "0") < 0) ? "debit" : "credit",
+        category: row.category ?? "",
+      }));
 
       const res = await fetch("/api/chat/atlas", {
         method: "POST",
