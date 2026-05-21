@@ -32,7 +32,7 @@ Instructions:
     model: process.env.MODEL_NAME ?? 'meta/llama-3.1-8b-instruct',
     messages: [
       { role: 'system', content: systemContent },
-      ...messages.map((m: any) => ({ role: m.role, content: m.text })),
+      ...messages.map((m: any) => ({ role: m.role === 'ai' ? 'assistant' : 'user', content: m.content ?? '' })),
     ],
     stream: true,
   });
