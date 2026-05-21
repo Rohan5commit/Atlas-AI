@@ -68,7 +68,7 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [uploaded, setUploaded] = useState(false);
   const [fileName, setFileName] = useState("");
-  const [csvText, setCsvText] = useState("");
+  const csvTextRef = useRef("");
   const [barsReady, setBarsReady] = useState(false);
   const [kpis, setKpis] = useState<{ cashflow: string; volatility: string; anomalies: string } | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -86,7 +86,7 @@ export default function Home() {
     const reader = new FileReader();
     reader.onload = async (ev) => {
       const text = (ev.target?.result as string) ?? "";
-      setCsvText(text);
+      csvTextRef.current = text;
       const rows = parseCSV(text);
       const rowCount = rows.length;
       setUploaded(true);
@@ -112,7 +112,7 @@ export default function Home() {
     setLoading(true);
     try {
       // Use RFC-4180 parser — handles quoted commas, escaped quotes, etc.
-      const parsedRows = parseCSV(csvText);
+      const parsedRows = parseCSV(csvTextRef.current);
 
       const transactions = parsedRows
         .map(r => {
@@ -266,7 +266,7 @@ export default function Home() {
               </div>
               <div className="upload-text-sub">
                 {uploaded
-                  ? `${csvText ? parseCSV(csvText).length : 0} transaction rows parsed`
+                  ? `${csvTextRef.current ? parseCSV(csvTextRef.current).length : 0} transaction rows parsed`
                   : "CSV, XLSX, or JSON · Any bank export format"}
               </div>
             </div>
