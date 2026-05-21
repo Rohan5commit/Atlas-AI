@@ -68,10 +68,24 @@ export default function Home() {
     setMessages((m) => [...m, { role: "user", text: q }]);
     setLoading(true);
     try {
+      // Parse CSV into Transaction rows before sending
+      const rows = csvText.split("\n").filter(r => r.trim());
+      const headers = rows[0]?.split(",").map(h => h.trim().toLowerCase()) ?? [];
+      const transactions = rows.slice(1).map(row => {
+        const vals = row.split(",");
+        return {
+          date: vals[headers.indexOf("date")] ?? "",
+          merchant: vals[headers.indexOf("merchant")] ?? vals[headers.indexOf("description")] ?? "",
+          amount: parseFloat(vals[headers.indexOf("amount")] ?? "0") || 0,
+          type: parseFloat(vals[headers.indexOf("amount")] ?? "0") < 0 ? "debit" : "credit",
+          category: vals[headers.indexOf("category")] ?? "",
+        };
+      });
+
       const res = await fetch("/api/chat/atlas", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question: q, context: { fileName } }),
+        body: JSON.stringify({ question: q, transactions }),
       });
       const data = await res.json();
       setMessages((m) => [...m, { role: "ai", text: data.answer || "No response." }]);
@@ -90,7 +104,7 @@ export default function Home() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital @0;1&family=Work+Sans:wght @300..700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Work+Sans:wght@300..700&display=swap');
         *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
         html,body{height:100%;-webkit-font-smoothing:antialiased;overflow-x:hidden}
         body{font-family:'Work Sans','Helvetica Neue',sans-serif;background:#0d0d0e;color:#e8e6e0;font-size:1rem;line-height:1.6;min-height:100dvh}
