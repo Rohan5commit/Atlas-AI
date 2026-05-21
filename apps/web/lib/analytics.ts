@@ -4,7 +4,7 @@ const categoryMap: Record<string,string> = {
   starbucks:'Coffee', doordash:'Food Delivery', uber:'Transport', grab:'Transport',
   spotify:'Subscriptions', netflix:'Subscriptions', apple:'Tech',
   rent:'Housing', payroll:'Income', salary:'Income',
-  fairprice:'Groceries', wholefoods:'Groceries', cold storage:'Groceries',
+  fairprice:'Groceries', wholefoods:'Groceries', 'cold storage':'Groceries',
   amazon:'Shopping', lazada:'Shopping', shopee:'Shopping',
   utility:'Utilities', singtel:'Utilities', starhub:'Utilities', mio:'Utilities',
   tuition:'Education', school:'Education',
