@@ -131,55 +131,43 @@ export default function Home() {
     const q = (text ?? input).trim();
     if (!q || loading) return;
     setInput("");
-    setMessages((m) => [...m, { role: "user", text: q }, { role: "ai", text: "" }]);
+    
+    // Add user message and empty assistant message
+    const newMessages = [...messages, { role: "user" as const, text: q }];
+    setMessages([...newMessages, { role: "ai" as const, text: "" }]);
     setLoading(true);
 
     try {
-      const parsedRows = parseCSV(csvTextRef.current);
-      const transactions = parsedRows
-        .map(r => {
-          const rawAmt = r.amount ?? r.debitamount ?? r.creditamount ?? r.value ?? r.sum ?? "0";
-          const cleaned = rawAmt.replace(/[^\d.-]/g, "");
-          const numeric = parseFloat(cleaned);
-          const amount = isNaN(numeric) ? 0 : numeric;
-          const explicitType = (r.type ?? r.transactiontype ?? "").toLowerCase();
-          let type: "debit" | "credit" = explicitType === "debit" || explicitType === "dr" ? "debit" : explicitType === "credit" || explicitType === "cr" ? "credit" : "debit";
-          return {
-            date: r.date ?? r.transactiondate ?? "",
-            merchant: r.merchant ?? r.description ?? "",
-            amount: Math.abs(amount),
-            type,
-            category: r.category ?? "",
-          };
-        })
-        .filter(t => t.amount > 0 && t.date !== "");
-
-      const res = await fetch("/api/chat/atlas", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question: q, messages: [...messages, { role: "user", text: q }], dataSummary }),
+      const response = await fetch('/api/chat/atlas', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: newMessages,
+          dataSummary: dataSummary,
+        }),
       });
 
-      if (!res.body) throw new Error("No response body");
-      const reader = res.body.getReader();
+      const reader = response.body!.getReader();
       const decoder = new TextDecoder();
-      
-      let done = false;
-      while (!done) {
-        const { value, done: doneReading } = await reader.read();
-        done = doneReading;
-        const chunkValue = decoder.decode(value);
-        setMessages((m) => {
-          const newMessages = [...m];
-          newMessages[newMessages.length - 1].text += chunkValue;
-          return newMessages;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const token = decoder.decode(value, { stream: true });
+        setMessages(prev => {
+          const updated = [...prev];
+          updated[updated.length - 1] = {
+            role: "ai",
+            text: updated[updated.length - 1].text + token,
+          };
+          return updated;
         });
       }
     } catch {
       setMessages((m) => {
-        const newMessages = [...m];
-        newMessages[newMessages.length - 1].text = "⚠️ Error contacting Atlas API.";
-        return newMessages;
+        const updated = [...m];
+        updated[updated.length - 1] = { role: "ai", text: "⚠️ Error contacting Atlas API." };
+        return updated;
       });
     } finally {
       setLoading(false);

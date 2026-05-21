@@ -1,54 +1,56 @@
-import { NextResponse } from 'next/server';
-import { Transaction } from '@/lib/types';
-import { normalizeTransactions, generateDataSummary } from '@/lib/analytics';
+import OpenAI from 'openai';
+
+let client: OpenAI | null = null;
+const getClient = () => {
+  if (!client) {
+    client = new OpenAI({
+      apiKey: process.env.NVIDIA_API_KEY ?? process.env.OPENAI_API_KEY,
+      baseURL: process.env.NVIDIA_BASE_URL ?? 'https://api.openai.com/v1',
+    });
+  }
+  return client;
+};
 
 export async function POST(req: Request) {
-  const body = await req.json();
-  console.log('=== ATLAS DEBUG ===');
-  console.log('Keys received:', Object.keys(body));
-  console.log('dataSummary:', body.dataSummary ? 'PRESENT' : 'MISSING');
-  console.log('messages count:', body.messages?.length);
-  console.log('===================');
+  const { messages, dataSummary } = await req.json();
 
-  const { question, dataSummary } = body;
+  const systemContent = dataSummary
+    ? `You are Atlas, a grounded financial copilot. Answer questions ONLY using the transaction data provided below. Do not use outside knowledge.
 
-  const apiKey = process.env.NVCF_API_KEY;
-  if (!apiKey) return NextResponse.json({ error: 'NVCF_API_KEY missing' }, { status: 500 });
+TRANSACTION DATA SUMMARY:
+${JSON.stringify(dataSummary)}
 
-  const simpleKeywords = ["total", "how much", "what is", "show", "list", "top", "biggest", "highest", "lowest"];
-  const isSimple = simpleKeywords.some(kw => question.toLowerCase().includes(kw));
-  const model = isSimple ? "meta/llama-3.1-8b-instruct" : "meta/llama-3.1-70b-instruct";
+Instructions:
+- Answer concisely with bullet points where appropriate
+- Format all amounts with 2 decimal places and currency symbol
+- For anomaly detection: identify transactions or categories that are unusually high compared to the average
+- If something is not in the data, say exactly: "This information isn't available in your statement"
+- Never make up numbers`
+    : `You are Atlas, a financial copilot. No data has been uploaded yet. Tell the user to upload a CSV or XLSX file to get started.`;
 
-  const systemPrompt = dataSummary
-    ? `You are Atlas, a grounded financial copilot. Answer questions strictly based on the data below. Do not speculate or use outside knowledge.
-
-ACCOUNT SUMMARY:
-${JSON.stringify(dataSummary, null, 0)}
-
-Rules:
-- Be concise and direct
-- Use bullet points for lists
-- Format currency as USD with 2 decimal places
-- If the answer isn't in the data, say "This information isn't available in your statement"`
-    : `You are Atlas. No data has been uploaded yet. Ask the user to upload a CSV or XLSX file.`;
-
-  const res = await fetch('https://integrate.api.nvidia.com/v1/chat/completions', {
-    method: 'POST',
-    headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: question },
-      ],
-      temperature: 0.1,
-      stream: true,
-    }),
+  const stream = await getClient().chat.completions.create({
+    model: process.env.MODEL_NAME ?? 'meta/llama-3.1-8b-instruct',
+    messages: [
+      { role: 'system', content: systemContent },
+      ...messages.map((m: any) => ({ role: m.role, content: m.text })),
+    ],
+    stream: true,
   });
 
-  if (!res.ok) return NextResponse.json({ error: 'NVIDIA inference call failed' }, { status: 502 });
-  
-  return new Response(res.body, {
-    headers: { 'Content-Type': 'text/event-stream' }
+  const encoder = new TextEncoder();
+  const readable = new ReadableStream({
+    async start(controller) {
+      for await (const chunk of stream) {
+        const token = chunk.choices[0]?.delta?.content;
+        if (token) {
+          controller.enqueue(encoder.encode(token));
+        }
+      }
+      controller.close();
+    },
+  });
+
+  return new Response(readable, {
+    headers: { 'Content-Type': 'text/plain; charset=utf-8' },
   });
 }
