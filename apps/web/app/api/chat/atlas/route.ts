@@ -4,6 +4,7 @@ import { normalizeTransactions, generateDataSummary } from '@/lib/analytics';
 
 export async function POST(req: Request) {
   const { question, dataSummary } = await req.json().catch(() => ({ question: '', dataSummary: null }));
+  console.log('API received dataSummary:', JSON.stringify(dataSummary).slice(0, 200));
 
   const apiKey = process.env.NVCF_API_KEY;
   if (!apiKey) return NextResponse.json({ error: 'NVCF_API_KEY missing' }, { status: 500 });

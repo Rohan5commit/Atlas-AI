@@ -154,6 +154,7 @@ export default function Home() {
         })
         .filter(t => t.amount > 0 && t.date !== "");
 
+      console.log('Sending dataSummary:', JSON.stringify(dataSummary).slice(0, 200));
       const res = await fetch("/api/chat/atlas", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
