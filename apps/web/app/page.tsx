@@ -109,13 +109,18 @@ export default function Home() {
         })
         .filter(t => t.amount > 0 && t.date !== "");
         
-      setDataSummary(generateDataSummary(transactions));
+      const summary = generateDataSummary(transactions);
+      setDataSummary(summary);
 
       const rowCount = transactions.length;
       setUploaded(true);
       setBarsReady(true);
       setLoading(false);
-      setKpis({ cashflow: "Ask Atlas ↓", volatility: "Ask Atlas ↓", anomalies: "Ask Atlas ↓" });
+      setKpis({
+        cashflow: `$${summary.netCashflow.toFixed(2)}`,
+        volatility: summary.anomaliesSummary,
+        anomalies: String(summary.topCategories.length > 0 ? "Detected" : "None"),
+      });
       setMessages((m) => [
         ...m,
         {
