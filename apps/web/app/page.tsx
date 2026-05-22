@@ -17,6 +17,10 @@ const SUGGESTED = [
   "What is my monthly burn rate?",
 ];
 
+import { DataSummary } from "@/lib/types";
+
+// ...
+
 export default function Home() {
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -25,7 +29,7 @@ export default function Home() {
     },
   ]);
   const [input, setInput] = useState("");
-  const [dataSummary, setDataSummary] = useState<any>(null);
+  const [dataSummary, setDataSummary] = useState<DataSummary | null>(null);
   const [loading, setLoading] = useState(false);
   const [uploaded, setUploaded] = useState(false);
   const [fileName, setFileName] = useState("");
@@ -70,8 +74,8 @@ export default function Home() {
       setDataSummary(summary);
       
       const last15 = transactions.slice(-15);
-      const max = Math.max(...last15.map(t => t.amount), 1);
-      const realBarHeights = last15.map(t => Math.round((t.amount / max) * 100));
+      const max = Math.max(...last15.map((t: any) => t.amount), 1);
+      const realBarHeights = last15.map((t: any) => Math.round((t.amount / max) * 100));
       setBarHeights(realBarHeights);
 
       const rowCount = transactions.length;
@@ -293,7 +297,7 @@ export default function Home() {
 
         <div className="chat-box">
           <div className="messages">
-            {messages.map((m, i) => (
+            {messages.map((m: Message, i: number) => (
               <div key={i} className={`msg msg-${m.role}`}>
                 {m.role === 'ai' ? (
                   <ReactMarkdown components={{

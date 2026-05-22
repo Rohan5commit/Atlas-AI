@@ -8,3 +8,4 @@ apps/web/.vite
 __pycache__
 .env*
 .vercel
+.DS_Store

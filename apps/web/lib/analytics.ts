@@ -88,23 +88,41 @@ export function simpleForecast(tx: Transaction[], days: 30 | 90) {
 
 export function detectAnomalies(tx: Transaction[]) {
   const debits = tx.filter(t => t.type === 'debit');
-  if (debits.length === 0) return [];
+  if (debits.length < 4) return [];
 
-  const amounts = debits.map(t => Math.abs(t.amount));
-  const mean = amounts.reduce((a, b) => a + b, 0) / amounts.length;
-  const sd   = Math.sqrt(amounts.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / amounts.length);
+  const amounts = debits.map(t => Math.abs(t.amount)).sort((a, b) => a - b);
+  const q1 = amounts[Math.floor(amounts.length * 0.25)];
+  const q3 = amounts[Math.floor(amounts.length * 0.75)];
+  const iqr = q3 - q1;
+  const threshold = q3 + 1.5 * iqr;
 
-  return debits
-    .filter(t => Math.abs(t.amount) > mean + 1.5 * sd)
+  const allAnomalies = debits
+    .filter(t => Math.abs(t.amount) > threshold)
+    .sort((a, b) => Math.abs(b.amount) - Math.abs(a.amount))
     .map((t, i) => ({
       id:         `a${i}`,
-      reason:     `Amount is ${Math.round((Math.abs(t.amount) / Math.max(mean, 1)) * 100)}% of average debit`,
-      severity:   Math.abs(t.amount) > mean + 2 * sd ? 'high' : 'medium',
-      confidence: Math.min(0.95, 0.65 + (Math.abs(t.amount) - mean) / (4 * (sd || 1))),
+      reason:     `Unusually high transaction ($${Math.abs(t.amount)})`,
+      severity:   'high',
+      confidence: 0.9,
       merchant:   t.merchant,
       amount:     Math.abs(t.amount),
       date:       t.date,
     }));
+
+  const limited = allAnomalies.slice(0, 10);
+  if (allAnomalies.length > 10) {
+    limited.push({
+      id: 'more',
+      reason: `...and ${allAnomalies.length - 10} more anomalies.`,
+      severity: 'medium',
+      confidence: 0.5,
+      merchant: 'System',
+      amount: 0,
+      date: '',
+    });
+  }
+
+  return limited;
 }
 
 export function portfolioRisk(holdings: PortfolioHolding[]) {
