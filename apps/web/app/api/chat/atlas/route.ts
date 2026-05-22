@@ -4,8 +4,8 @@ let client: OpenAI | null = null;
 const getClient = () => {
   if (!client) {
     client = new OpenAI({
-      apiKey: process.env.NVCF_API_KEY ?? process.env.NVIDIA_API_KEY ?? process.env.OPENAI_API_KEY,
-      baseURL: process.env.NVIDIA_BASE_URL ?? 'https://api.openai.com/v1',
+      apiKey: process.env.NVIDIA_API_KEY ?? process.env.NVCF_API_KEY,
+      baseURL: process.env.NVIDIA_BASE_URL ?? 'https://integrate.api.nvidia.com/v1',
     });
   }
   return client;
