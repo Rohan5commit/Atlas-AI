@@ -275,6 +275,52 @@ export default function Home() {
           {!uploaded
             ? <div style={{display: 'flex', gap: '0.5rem'}}>
                 <button className="upload-btn" onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}>Choose file</button>
+                <button 
+                  className="upload-btn" 
+                  style={{background: 'rgba(59, 130, 246, 0.8)'}}
+                  onClick={async (e) => {
+                    e.stopPropagation();
+                    setLoading(true);
+                    try {
+                      const res = await fetch('/data/sample-transactions.csv');
+                      const text = await res.text();
+                      csvTextRef.current = text;
+                      const fileType = detectFileType(text);
+                      const parsed = Papa.parse(text, { header: true, skipEmptyLines: true });
+                      const { data: transactions, errors } = parseTransactions(parsed.data as any[], fileType);
+                      
+                      if (errors.length > 0 || transactions.length === 0) throw new Error("Parse failed");
+                      
+                      const summary = generateDataSummary(transactions);
+                      setDataSummary(summary);
+                      const last15 = transactions.slice(-15);
+                      const absAmounts = last15.map((t: any) => Math.abs(t.amount));
+                      const max = Math.max(...absAmounts, 1);
+                      setBarHeights(last15.map((t: any) => Math.round((Math.abs(t.amount) / max) * 100)));
+                      
+                      setUploaded(true);
+                      setBarsReady(true);
+                      setKpis({
+                        cashflow: { value: `$${summary.netCashflow.toFixed(2)}`, delta: "Based on historicals" },
+                        volatility: { value: summary.anomaliesSummary, delta: "P95 band" },
+                        anomalies: { value: String(summary.topCategories.length > 0 ? "Detected" : "None"), delta: "Ask Atlas for details" },
+                      });
+                      setMessages((m) => [
+                        ...m,
+                        {
+                          role: "ai",
+                          content: `✓ **Sample Data** uploaded — ${transactions.length} transaction rows parsed. I'm ready. Ask me about your cashflow, forecast, or anomalies.`,
+                        },
+                      ]);
+                    } catch (err) {
+                      alert("Failed to load sample data.");
+                    } finally {
+                      setLoading(false);
+                    }
+                  }}
+                >
+                  Try sample data
+                </button>
                 <a href="/architecture" className="upload-btn" style={{background: 'rgba(255,255,255,0.05)', color: '#aaa', border: '1px solid rgba(255,255,255,0.1)'}}>Architecture</a>
               </div>
             : <span className="upload-btn done-btn">✓ Ingested</span>
