@@ -247,7 +247,10 @@ export default function Home() {
             </div>
           </div>
           {!uploaded
-            ? <button className="upload-btn" onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}>Choose file</button>
+            ? <div style={{display: 'flex', gap: '0.5rem'}}>
+                <button className="upload-btn" onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}>Choose file</button>
+                <a href="/architecture" className="upload-btn" style={{background: 'rgba(255,255,255,0.05)', color: '#aaa', border: '1px solid rgba(255,255,255,0.1)'}}>Architecture</a>
+              </div>
             : <span className="upload-btn done-btn">✓ Ingested</span>
           }
         </div>
