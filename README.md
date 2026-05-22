@@ -17,7 +17,6 @@ Atlas AI ingests real CSV transaction and beginner portfolio data, computes expl
 
 ## Monorepo
 - `apps/web` — Next.js 15 frontend + route handlers
-- `services/ml-api` — FastAPI analytics service
 - `docs/` — architecture, demo script, devpost copy, slides, credits, judging hook
 
 ## Local setup
@@ -25,17 +24,11 @@ Atlas AI ingests real CSV transaction and beginner portfolio data, computes expl
 npm install
 npm run dev:web
 ```
-In a second terminal (optional ML service):
-```bash
-python -m pip install -r services/ml-api/requirements.txt
-npm run dev:ml
-```
 
 ## Environment variables
 Create `.env.local` in repo root or `apps/web`:
 ```bash
 NVCF_API_KEY=<your_nvidia_api_key>
-NEXT_PUBLIC_ML_API_URL=http://localhost:8001
 ```
 
 ## Key routes
