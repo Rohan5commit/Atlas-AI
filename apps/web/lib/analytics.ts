@@ -94,7 +94,10 @@ export function detectAnomalies(tx: Transaction[]) {
   const q1 = amounts[Math.floor(amounts.length * 0.25)];
   const q3 = amounts[Math.floor(amounts.length * 0.75)];
   const iqr = q3 - q1;
-  const threshold = q3 + 1.5 * iqr;
+  
+  // Use 3.0 * IQR for extreme outliers (financial anomalies) instead of 1.5 * IQR
+  // and add a $50 floor to prevent flagging insignificant small-amount anomalies
+  const threshold = Math.max(q3 + 3.0 * iqr, 50);
 
   const allAnomalies = debits
     .filter(t => Math.abs(t.amount) > threshold)
