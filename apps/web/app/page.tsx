@@ -15,7 +15,13 @@ const SUGGESTED = [
   "What is my monthly burn rate?",
 ];
 
-const BAR_HEIGHTS = [55, 68, 48, 77, 85, 62, 91, 79, 72, 94, 86, 100, 91, 83, 96];
+export default function Home() {
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      role: "ai",
+      content: "Hello! I'm Atlas, your grounded financial copilot. Upload a CSV or XLSX file of your transactions above — then ask me anything about your cashflow, forecasts, or anomalies. Every answer is grounded strictly in your data.",
+    },
+  ]);
 
 /**
  * RFC-4180 compliant CSV parser that handles:
@@ -72,6 +78,7 @@ export default function Home() {
   const [uploaded, setUploaded] = useState(false);
   const [fileName, setFileName] = useState("");
   const csvTextRef = useRef("");
+  const [barHeights, setBarHeights] = useState<number[]>([]);
   const [barsReady, setBarsReady] = useState(false);
   const [kpis, setKpis] = useState<{ cashflow: string; volatility: string; anomalies: string } | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -111,6 +118,11 @@ export default function Home() {
         
       const summary = generateDataSummary(transactions);
       setDataSummary(summary);
+      
+      const last15 = transactions.slice(-15);
+      const max = Math.max(...last15.map(t => t.amount), 1);
+      const realBarHeights = last15.map(t => Math.round((t.amount / max) * 100));
+      setBarHeights(realBarHeights);
 
       const rowCount = transactions.length;
       setUploaded(true);
@@ -317,7 +329,7 @@ export default function Home() {
           <div className="chart-wrap">
             <div className="chart-title">Transaction Volume · Last 15 entries</div>
             <div className="chart">
-              {BAR_HEIGHTS.map((h, i) => (
+              {barHeights.map((h, i) => (
                 <div key={i} className="bar-bg">
                   <div className="bar-fill" style={{ height: barsReady ? `${h}%` : "0%" }}/>
                 </div>
