@@ -1,2 +1,1 @@
-# Judging Hook
-Atlas AI is submission-ready because it demonstrates measurable user value (spending clarity + risk explainability + concrete actions) in one coherent flow from CSV ingestion to prioritized recommendations with evidence.
+A 19-year-old with $3,000 in savings and three subscriptions she forgot about has no tool that connects her daily spending to her portfolio volatility in one place. Atlas AI does that in under 60 seconds from a bank CSV.
