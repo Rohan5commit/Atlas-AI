@@ -15,14 +15,6 @@ const SUGGESTED = [
   "What is my monthly burn rate?",
 ];
 
-export default function Home() {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      role: "ai",
-      content: "Hello! I'm Atlas, your grounded financial copilot. Upload a CSV or XLSX file of your transactions above — then ask me anything about your cashflow, forecasts, or anomalies. Every answer is grounded strictly in your data.",
-    },
-  ]);
-
 /**
  * RFC-4180 compliant CSV parser that handles:
  * - Quoted fields with embedded commas
