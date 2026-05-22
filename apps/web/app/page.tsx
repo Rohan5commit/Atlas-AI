@@ -36,7 +36,11 @@ export default function Home() {
   const csvTextRef = useRef("");
   const [barHeights, setBarHeights] = useState<number[]>([]);
   const [barsReady, setBarsReady] = useState(false);
-  const [kpis, setKpis] = useState<{ cashflow: string; volatility: string; anomalies: string } | null>(null);
+  const [kpis, setKpis] = useState<{
+    cashflow: { value: string; delta?: string };
+    volatility: { value: string; delta?: string };
+    anomalies: { value: string; delta?: string };
+  } | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -83,9 +87,9 @@ export default function Home() {
       setBarsReady(true);
       setLoading(false);
       setKpis({
-        cashflow: `$${summary.netCashflow.toFixed(2)}`,
-        volatility: summary.anomaliesSummary,
-        anomalies: String(summary.topCategories.length > 0 ? "Detected" : "None"),
+        cashflow: { value: `$${summary.netCashflow.toFixed(2)}`, delta: "Based on historicals" },
+        volatility: { value: summary.anomaliesSummary, delta: "P95 band" },
+        anomalies: { value: String(summary.topCategories.length > 0 ? "Detected" : "None"), delta: "Ask Atlas for details" },
       });
       setMessages((m) => [
         ...m,
@@ -265,9 +269,9 @@ export default function Home() {
         ) : (
           <div className="kpis">
             {[
-              { label: "30-Day Net Cashflow", val: kpis?.cashflow ?? "—", delta: "Ask Atlas for the figure" },
-              { label: "Forecast Volatility", val: kpis?.volatility ?? "—", delta: "P95 band" },
-              { label: "Anomaly Alerts", val: kpis?.anomalies ?? "—", delta: "Ask Atlas to surface them" },
+              { label: "30-Day Net Cashflow", val: kpis?.cashflow.value ?? "—", delta: kpis?.cashflow.delta ?? "Ask Atlas for the figure" },
+              { label: "Forecast Volatility", val: kpis?.volatility.value ?? "—", delta: kpis?.volatility.delta ?? "P95 band" },
+              { label: "Anomaly Alerts", val: kpis?.anomalies.value ?? "—", delta: kpis?.anomalies.delta ?? "Ask Atlas to surface them" },
             ].map((k, i) => (
               <div key={i} className="kpi">
                 <div className="kpi-label">{k.label}</div>
