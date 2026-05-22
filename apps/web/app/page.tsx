@@ -78,8 +78,9 @@ export default function Home() {
       setDataSummary(summary);
       
       const last15 = transactions.slice(-15);
-      const max = Math.max(...last15.map((t: any) => t.amount), 1);
-      const realBarHeights = last15.map((t: any) => Math.round((t.amount / max) * 100));
+      const absAmounts = last15.map((t: any) => Math.abs(t.amount));
+      const max = Math.max(...absAmounts, 1);
+      const realBarHeights = last15.map((t: any) => Math.round((Math.abs(t.amount) / max) * 100));
       setBarHeights(realBarHeights);
 
       const rowCount = transactions.length;
