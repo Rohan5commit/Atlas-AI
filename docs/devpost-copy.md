@@ -8,7 +8,15 @@ Beginners lack clear tools that connect spending behavior to portfolio risk and 
 ## Solution
 Atlas AI ingests transaction + holdings data, computes explainable analytics, and generates a prioritized action plan.
 ## How we built it
-Next.js 15 + TypeScript frontend, FastAPI analytics microservice, pandas/numpy/sklearn algorithms.
+Built on Next.js 15 App Router with streaming, leveraging NVIDIA NIM API (meta/llama-3.1-8b-instruct) for intelligent financial reasoning. Analytics powered by a FastAPI microservice.
+
+## Technologies Used
+- NVIDIA NIM API (meta/llama-3.1-8b-instruct via integrate.api.nvidia.com)
+- Vercel Edge Functions
+- Next.js 15 App Router (Streaming)
+- FastAPI
+- Zod (Validation)
+- PapaParse (CSV Parsing)
 ## Challenges
 Noisy merchant strings, missing categories, balancing explainability with model depth.
 ## Accomplishments
