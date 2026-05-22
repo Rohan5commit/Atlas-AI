@@ -28,7 +28,6 @@ export function detectFileType(text: string): 'BANK' | 'IBKR' {
   if (text.startsWith('Statement,Header,Field Name,Field Value')) return 'IBKR';
   return 'BANK';
 }
-...
 
 export function parseIBKR(text: string): IBKRData {
   const lines = text.split('\n');
@@ -66,12 +65,16 @@ export function parseTransactions(rows: Record<string, unknown>[], fileType: 'BA
   
   const data: Transaction[] = []; const errors: string[] = [];
   rows.forEach((r, i) => {
-    const amountRaw = Number(r.amount ?? r.Amount ?? 0);
+    // Robust header detection
+    const date = r.date ?? r.Date ?? r['Transaction Date'] ?? r['Date'] ?? r['Timestamp'] ?? '';
+    const merchant = r.merchant ?? r.Merchant ?? r.description ?? r.Description ?? r.Payee ?? r['Payee Name'] ?? r.Name ?? '';
+    const amountRaw = r.amount ?? r.Amount ?? r.Value ?? r['Transaction Amount'] ?? 0;
+    
     const tx = { 
-        date: String(r.date ?? r.Date ?? ''), 
-        merchant: String(r.merchant ?? r.description ?? r.Merchant ?? ''), 
-        amount: Math.abs(amountRaw), 
-        type: 'debit' as const // Default to debit for positive-amount CSVs as per prior fix
+        date: String(date), 
+        merchant: String(merchant), 
+        amount: Math.abs(Number(amountRaw)), 
+        type: 'debit' as const 
     };
     const v = txSchema.safeParse(tx);
     if (v.success) data.push(v.data); else errors.push(`Row ${i+1}: invalid transaction fields`);

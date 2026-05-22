@@ -3,7 +3,8 @@ import { useState, useRef, useEffect } from "react";
 import Papa from "papaparse";
 import ReactMarkdown from "react-markdown";
 import { generateDataSummary } from "@/lib/analytics";
-import { parseTransactions, detectFileType } from "@/lib/ingest";
+import { parseTransactions, detectFileType, parseExcelFile } from "@/lib/ingest";
+import { Transaction } from "@/lib/types";
 
 interface Message {
   role: "user" | "ai";
