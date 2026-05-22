@@ -1,6 +1,7 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
 import Papa from "papaparse";
+import ReactMarkdown from "react-markdown";
 import { generateDataSummary } from "@/lib/analytics";
 
 interface Message {
@@ -340,7 +341,16 @@ export default function Home() {
         <div className="chat-box">
           <div className="messages">
             {messages.map((m, i) => (
-              <div key={i} className={`msg msg-${m.role}`}>{renderText(m.content)}</div>
+              <div key={i} className={`msg msg-${m.role}`}>
+                {m.role === 'ai' ? (
+                  <ReactMarkdown components={{
+                    p: ({children}) => <>{children}<br/></>,
+                    ul: ({children}) => <ul style={{listStyle: 'disc', paddingLeft: '20px'}}>{children}</ul>,
+                    strong: ({children}) => <strong>{children}</strong>,
+                    code: ({children}) => <code>{children}</code>
+                  }}>{m.content}</ReactMarkdown>
+                ) : m.content}
+              </div>
             ))}
             {loading && (
               <div className="typing">
