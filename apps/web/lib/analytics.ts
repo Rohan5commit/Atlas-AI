@@ -108,6 +108,8 @@ export function detectAnomalies(tx: Transaction[]) {
 }
 
 export function portfolioRisk(holdings: PortfolioHolding[]) {
+  // NOTE: These are illustrative prices for demonstration purposes.
+  // In a production environment, this would integrate with a real-time market data provider.
   const prices: Record<string,number> = {
     AAPL:195, MSFT:420, NVDA:1020, VOO:510, TSLA:180, CASH:1, QQQ:450, AMD:160,
   };

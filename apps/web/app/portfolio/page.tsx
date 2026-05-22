@@ -15,6 +15,7 @@ export default function PortfolioPage(){
     </div>
     <div className='card text-sm text-slate-300'>
       Higher concentration increases volatility and drawdown risk. For first-time investors, spreading exposure across diversified funds can reduce downside stress.
+      <p className='mt-2 text-xs opacity-70'>* Note: Portfolio prices are illustrative and not real-time. Real-time market data connection required for live valuations.</p>
     </div>
   </section>
 }

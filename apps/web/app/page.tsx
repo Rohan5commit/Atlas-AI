@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from "react";
 import Papa from "papaparse";
 import ReactMarkdown from "react-markdown";
 import { generateDataSummary } from "@/lib/analytics";
+import { parseTransactions, detectFileType } from "@/lib/ingest";
 
 interface Message {
   role: "user" | "ai";
@@ -15,48 +16,6 @@ const SUGGESTED = [
   "Which category has the highest outflow?",
   "What is my monthly burn rate?",
 ];
-
-/**
- * RFC-4180 compliant CSV parser that handles:
- * - Quoted fields with embedded commas
- * - Quoted fields with embedded newlines
- * - Escaped double-quotes ("")
- */
-function parseCSV(text: string): Record<string, string>[] {
-  const rows: string[][] = [];
-  let cur = "";
-  let inQuote = false;
-  let fields: string[] = [];
-
-  for (let i = 0; i < text.length; i++) {
-    const ch = text[i];
-    const next = text[i + 1];
-
-    if (inQuote) {
-      if (ch === '"' && next === '"') { cur += '"'; i++; }
-      else if (ch === '"') { inQuote = false; }
-      else { cur += ch; }
-    } else {
-      if (ch === '"') { inQuote = true; }
-      else if (ch === ',') { fields.push(cur.trim()); cur = ""; }
-      else if (ch === '\n' || (ch === '\r' && next === '\n')) {
-        if (ch === '\r') i++;
-        fields.push(cur.trim());
-        if (fields.some(f => f !== "")) rows.push(fields);
-        fields = []; cur = "";
-      } else { cur += ch; }
-    }
-  }
-  // last field/row
-  fields.push(cur.trim());
-  if (fields.some(f => f !== "")) rows.push(fields);
-
-  if (rows.length < 2) return [];
-  const headers = rows[0].map(h => h.toLowerCase().replace(/[^a-z0-9]/g, ""));
-  return rows.slice(1).map(row =>
-    Object.fromEntries(headers.map((h, i) => [h, row[i] ?? ""]))
-  );
-}
 
 export default function Home() {
   const [messages, setMessages] = useState<Message[]>([
@@ -90,24 +49,14 @@ export default function Home() {
     reader.onload = async (ev) => {
       const text = (ev.target?.result as string) ?? "";
       csvTextRef.current = text;
-      const parsedRows = parseCSV(text);
-      const transactions = parsedRows
-        .map(r => {
-          const rawAmt = r.amount ?? r.debitamount ?? r.creditamount ?? r.value ?? r.sum ?? "0";
-          const cleaned = rawAmt.replace(/[^\d.-]/g, "");
-          const numeric = parseFloat(cleaned);
-          const amount = isNaN(numeric) ? 0 : numeric;
-          const explicitType = (r.type ?? r.transactiontype ?? "").toLowerCase();
-          let type: "debit" | "credit" = explicitType === "debit" || explicitType === "dr" ? "debit" : explicitType === "credit" || explicitType === "cr" ? "credit" : "debit";
-          return {
-            date: r.date ?? r.transactiondate ?? "",
-            merchant: r.merchant ?? r.description ?? "",
-            amount: Math.abs(amount),
-            type,
-            category: r.category ?? "",
-          };
-        })
-        .filter(t => t.amount > 0 && t.date !== "");
+      
+      const fileType = detectFileType(text);
+      const parsed = Papa.parse(text, { header: true, skipEmptyLines: true });
+      const { data: transactions, errors } = parseTransactions(parsed.data as any[], fileType);
+
+      if (errors.length > 0) {
+        console.error("Ingestion errors:", errors);
+      }
         
       const summary = generateDataSummary(transactions);
       setDataSummary(summary);
@@ -157,7 +106,8 @@ export default function Home() {
         }),
       });
 
-      const reader = response.body!.getReader();
+      if (!response.body) throw new Error("No response body");
+      const reader = response.body.getReader();
       const decoder = new TextDecoder();
 
       while (true) {
@@ -183,11 +133,6 @@ export default function Home() {
       setLoading(false);
     }
   };
-
-  const renderText = (text: string) =>
-    text.split(/\*\*(.*?)\*\*/g).map((part, i) =>
-      i % 2 === 1 ? <strong key={i}>{part}</strong> : part
-    );
 
   return (
     <>
@@ -284,7 +229,7 @@ export default function Home() {
               </div>
               <div className="upload-text-sub">
                 {uploaded
-                  ? `${csvTextRef.current ? parseCSV(csvTextRef.current).length : 0} transaction rows parsed`
+                  ? `${csvTextRef.current ? (csvTextRef.current.split('\n').length - 1) : 0} transaction rows parsed`
                   : "CSV, XLSX, or JSON · Any bank export format"}
               </div>
             </div>
