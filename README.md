@@ -15,9 +15,12 @@ Atlas AI ingests real CSV transaction and beginner portfolio data, computes expl
 - ✅ Ask Atlas grounded assistant using NVIDIA API context injection
 - ✅ Action plan summary
 
-## Monorepo
-- `apps/web` — Next.js 15 frontend + route handlers
-- `docs/` — architecture, demo script, devpost copy, slides, credits, judging hook
+## Resources
+- [Pitch Deck (PDF)](./docs/pitch-deck.pdf)
+- [Architecture Diagram](./docs/architecture.md)
+- [Demo Script](./docs/demo-script.md)
+- [Devpost Copy](./docs/devpost-copy.md)
+- [Judging Hook](./docs/judging-hook.md)
 
 ## Local setup
 ```bash
