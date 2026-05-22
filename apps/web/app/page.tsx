@@ -173,81 +173,12 @@ export default function Home() {
   };
 
   return (
-    <>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Work+Sans:wght@300..700&display=swap');
-        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-        html,body{height:100%;-webkit-font-smoothing:antialiased;overflow-x:hidden}
-        body{font-family:'Work Sans','Helvetica Neue',sans-serif;background:#0d0d0e;color:#e8e6e0;font-size:1rem;line-height:1.6;min-height:100dvh}
-        .page{display:flex;flex-direction:column;max-width:1060px;margin:0 auto;padding:2.5rem 1.5rem 3rem;gap:1.5rem}
-
-        /* upload */
-        .upload-zone{border:1.5px dashed rgba(255,255,255,0.1);border-radius:0.875rem;padding:1.375rem 1.75rem;display:flex;align-items:center;justify-content:space-between;gap:1.25rem;background:rgba(255,255,255,0.015);cursor:pointer;transition:border-color 180ms,background 180ms}
-        .upload-zone:hover{border-color:#4f98a3;background:rgba(79,152,163,0.04)}
-        .upload-zone.done{border-color:#6daa45;border-style:solid;background:rgba(109,170,69,0.05);cursor:default}
-        .upload-label{display:flex;align-items:center;gap:0.75rem}
-        .upload-icon{width:38px;height:38px;border-radius:50%;background:rgba(79,152,163,0.12);border:1px solid rgba(79,152,163,0.25);display:flex;align-items:center;justify-content:center;color:#4f98a3;flex-shrink:0}
-        .upload-icon.green{background:rgba(109,170,69,0.12);border-color:rgba(109,170,69,0.3);color:#6daa45}
-        .upload-text-main{font-size:0.9375rem;font-weight:600;color:#e8e6e0}
-        .upload-text-sub{font-size:0.8125rem;color:#7a7874;margin-top:2px}
-        .upload-btn{padding:0.5625rem 1.125rem;border-radius:0.5rem;background:#4f98a3;color:#fff;font-size:0.875rem;font-weight:600;border:none;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:background 180ms;font-family:inherit}
-        .upload-btn:hover{background:#60b0bc}
-        .upload-btn.done-btn{background:rgba(109,170,69,0.12);color:#6daa45;border:1px solid rgba(109,170,69,0.3);cursor:default}
-
-        /* locked state */
-        .locked{border:1px solid rgba(255,255,255,0.06);border-radius:0.875rem;padding:2rem;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0.625rem;background:#141416;min-height:120px;color:#3a3836;font-size:0.9375rem;text-align:center}
-        .locked svg{opacity:0.3}
-
-        /* kpis */
-        .kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem}
-        .kpi{padding:1.25rem 1.375rem;border:1px solid rgba(255,255,255,0.07);border-radius:0.75rem;background:#141416}
-        .kpi-label{font-size:0.75rem;color:#7a7874;letter-spacing:0.02em;margin-bottom:0.375rem}
-        .kpi-val{font-size:1.4375rem;font-weight:700;color:#e8e6e0;font-variant-numeric:tabular-nums;letter-spacing:-0.02em;line-height:1.1}
-        .kpi-delta{font-size:0.75rem;margin-top:0.25rem;color:#7a7874}
-
-        /* chart */
-        .chart-wrap{border:1px solid rgba(255,255,255,0.07);border-radius:0.75rem;background:#141416;padding:1.25rem 1.25rem 0.875rem}
-        .chart-title{font-size:0.75rem;color:#7a7874;margin-bottom:0.875rem;letter-spacing:0.05em;text-transform:uppercase}
-        .chart{display:flex;align-items:flex-end;gap:5px;height:120px}
-        .bar-bg{flex:1;background:#1a1a1d;border-radius:3px 3px 0 0;position:relative;overflow:hidden}
-        .bar-fill{position:absolute;bottom:0;left:0;right:0;border-radius:3px 3px 0 0;background:linear-gradient(to top,#4f98a3,rgba(79,152,163,0.3));transition:height 1s cubic-bezier(0.16,1,0.3,1)}
-
-        /* divider */
-        .divider{height:1px;background:rgba(255,255,255,0.06)}
-
-        /* chat */
-        .chat-header-row{display:flex;align-items:center;justify-content:space-between}
-        .chat-label{font-size:0.75rem;color:#7a7874;letter-spacing:0.05em;text-transform:uppercase}
-        .chat-badge{font-size:0.6875rem;letter-spacing:0.05em;text-transform:uppercase;padding:0.2rem 0.625rem;border-radius:9999px;background:rgba(79,152,163,0.1);color:#4f98a3;border:1px solid rgba(79,152,163,0.25);font-weight:600}
-        .chat-box{border:1px solid rgba(255,255,255,0.07);border-radius:0.875rem;overflow:hidden;background:#141416;display:flex;flex-direction:column}
-        .messages{padding:1.25rem;display:flex;flex-direction:column;gap:0.875rem;min-height:240px;max-height:360px;overflow-y:auto;scroll-behavior:smooth}
-        .messages::-webkit-scrollbar{width:4px}.messages::-webkit-scrollbar-track{background:transparent}.messages::-webkit-scrollbar-thumb{background:#2a2a2d;border-radius:2px}
-        .msg{max-width:82%;padding:0.875rem 1rem;border-radius:0.75rem;font-size:0.9375rem;line-height:1.65;white-space:pre-wrap}
-        .msg-user{align-self:flex-end;background:#4f98a3;color:#fff;border-bottom-right-radius:0.25rem}
-        .msg-ai{align-self:flex-start;background:#1a1a1d;border:1px solid rgba(255,255,255,0.07);color:#e8e6e0;border-bottom-left-radius:0.25rem}
-        .msg-ai code{font-family:monospace;font-size:0.8125rem;background:#2a2a2d;padding:0.125rem 0.375rem;border-radius:0.25rem;color:#4f98a3}
-        .typing{display:flex;gap:5px;align-items:center;padding:0.875rem 1rem;align-self:flex-start}
-        .dot{width:7px;height:7px;border-radius:50%;background:#4f98a3;animation:bounce 1.2s ease-in-out infinite}
-        .dot:nth-child(2){animation-delay:.2s}.dot:nth-child(3){animation-delay:.4s}
-        @keyframes bounce{0%,80%,100%{transform:scale(0.6);opacity:0.4}40%{transform:scale(1);opacity:1}}
-        .suggestions{display:flex;flex-wrap:wrap;gap:0.5rem;padding:0.875rem 1.25rem;border-top:1px solid rgba(255,255,255,0.06)}
-        .suggest-btn{padding:0.4375rem 0.875rem;border-radius:9999px;border:1px solid rgba(255,255,255,0.1);background:transparent;color:#7a7874;font-size:0.8125rem;cursor:pointer;transition:color 180ms,border-color 180ms,background 180ms;font-family:inherit}
-        .suggest-btn:hover{color:#e8e6e0;border-color:rgba(79,152,163,0.5);background:rgba(79,152,163,0.06)}
-        .input-row{display:flex;gap:0.625rem;padding:0.875rem 1.25rem;border-top:1px solid rgba(255,255,255,0.07)}
-        .chat-input{flex:1;background:#0d0d0e;border:1px solid rgba(255,255,255,0.1);border-radius:0.625rem;padding:0.75rem 1rem;font-size:0.9375rem;color:#e8e6e0;outline:none;font-family:inherit;transition:border-color 180ms,box-shadow 180ms}
-        .chat-input:focus{border-color:#4f98a3;box-shadow:0 0 0 3px rgba(79,152,163,0.15)}
-        .chat-input::placeholder{color:#3a3836}
-        .send-btn{padding:0.75rem 1.25rem;border-radius:0.625rem;background:#4f98a3;color:#fff;font-weight:600;font-size:0.875rem;border:none;cursor:pointer;transition:background 180ms;font-family:inherit}
-        .send-btn:hover:not(:disabled){background:#60b0bc}
-        .send-btn:disabled{opacity:0.4;cursor:not-allowed}
-      `}</style>
-
-      <div className="page">
-        <div
-          className={`upload-zone${uploaded ? " done" : ""}`}
-          onClick={() => !uploaded && fileInputRef.current?.click()}
-        >
-          <input
+    <div className="page">
+      <div
+        className={`upload-zone${uploaded ? " done" : ""}`}
+        onClick={() => !uploaded && fileInputRef.current?.click()}
+      >
+        <input
             ref={fileInputRef}
             type="file"
             accept=".csv,.xlsx,.json,.txt"
@@ -291,37 +222,15 @@ export default function Home() {
                       
                       if (errors.length > 0 || transactions.length === 0) throw new Error("Parse failed");
                       
-                      const summary = generateDataSummary(transactions);
-                      setDataSummary(summary);
-                      const last15 = transactions.slice(-15);
-                      const absAmounts = last15.map((t: any) => Math.abs(t.amount));
-                      const max = Math.max(...absAmounts, 1);
-                      setBarHeights(last15.map((t: any) => Math.round((Math.abs(t.amount) / max) * 100)));
-                      
-                      setUploaded(true);
-                      setBarsReady(true);
-                      setKpis({
-                        cashflow: { value: `$${summary.netCashflow.toFixed(2)}`, delta: "Based on historicals" },
-                        volatility: { value: summary.anomaliesSummary, delta: "P95 band" },
-                        anomalies: { value: String(summary.topCategories.length > 0 ? "Detected" : "None"), delta: "Ask Atlas for details" },
-                      });
-                      setMessages((m) => [
-                        ...m,
-                        {
-                          role: "ai",
-                          content: `✓ **Sample Data** uploaded — ${transactions.length} transaction rows parsed. I'm ready. Ask me about your cashflow, forecast, or anomalies.`,
-                        },
-                      ]);
-                    } catch (err) {
-                      alert("Failed to load sample data.");
-                    } finally {
+                      processTransactions(transactions, "Sample Data");
+                    } catch (e) {
+                      alert("Failed to load sample data");
                       setLoading(false);
                     }
-                  }}
+                  }
                 >
-                  Try sample data
+                  Try Sample
                 </button>
-                <a href="/architecture" className="upload-btn" style={{background: 'rgba(255,255,255,0.05)', color: '#aaa', border: '1px solid rgba(255,255,255,0.1)'}}>Architecture</a>
               </div>
             : <span className="upload-btn done-btn">✓ Ingested</span>
           }
@@ -414,6 +323,6 @@ export default function Home() {
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }
