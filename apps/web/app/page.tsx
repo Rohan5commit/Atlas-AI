@@ -43,6 +43,12 @@ export default function Home() {
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
     if (!f) return;
+    
+    if (f.size > 5 * 1024 * 1024) {
+      alert("File too large. Max 5MB.");
+      return;
+    }
+    
     setFileName(f.name);
     setLoading(true);
     const reader = new FileReader();
@@ -54,8 +60,10 @@ export default function Home() {
       const parsed = Papa.parse(text, { header: true, skipEmptyLines: true });
       const { data: transactions, errors } = parseTransactions(parsed.data as any[], fileType);
 
-      if (errors.length > 0) {
-        console.error("Ingestion errors:", errors);
+      if (errors.length > 0 || transactions.length === 0) {
+        alert("Failed to parse file. Please ensure it's a valid CSV/JSON bank export.");
+        setLoading(false);
+        return;
       }
         
       const summary = generateDataSummary(transactions);
