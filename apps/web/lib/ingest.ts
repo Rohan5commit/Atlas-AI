@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import * as XLSX from 'xlsx';
 import { ImportResult, PortfolioHolding, Transaction } from './types';
 
 const txSchema = z.object({
@@ -16,10 +17,18 @@ export type IBKRData = {
   performance: any[];
 };
 
+export function parseExcelFile(buffer: ArrayBuffer): Record<string, unknown>[] {
+  const workbook = XLSX.read(buffer, { type: 'array' });
+  const firstSheetName = workbook.SheetNames[0];
+  const worksheet = workbook.Sheets[firstSheetName];
+  return XLSX.utils.sheet_to_json(worksheet);
+}
+
 export function detectFileType(text: string): 'BANK' | 'IBKR' {
   if (text.startsWith('Statement,Header,Field Name,Field Value')) return 'IBKR';
   return 'BANK';
 }
+...
 
 export function parseIBKR(text: string): IBKRData {
   const lines = text.split('\n');

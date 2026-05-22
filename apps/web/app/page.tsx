@@ -59,48 +59,68 @@ export default function Home() {
     
     setFileName(f.name);
     setLoading(true);
-    const reader = new FileReader();
-    reader.onload = async (ev) => {
-      const text = (ev.target?.result as string) ?? "";
-      csvTextRef.current = text;
-      
-      const fileType = detectFileType(text);
-      const parsed = Papa.parse(text, { header: true, skipEmptyLines: true });
-      const { data: transactions, errors } = parseTransactions(parsed.data as any[], fileType);
 
-      if (errors.length > 0 || transactions.length === 0) {
-        alert("Failed to parse file. Please ensure it's a valid CSV/JSON bank export.");
-        setLoading(false);
-        return;
-      }
-        
-      const summary = generateDataSummary(transactions);
-      setDataSummary(summary);
-      
-      const last15 = transactions.slice(-15);
-      const absAmounts = last15.map((t: any) => Math.abs(t.amount));
-      const max = Math.max(...absAmounts, 1);
-      const realBarHeights = last15.map((t: any) => Math.round((Math.abs(t.amount) / max) * 100));
-      setBarHeights(realBarHeights);
+    if (f.name.endsWith('.xlsx')) {
+      const reader = new FileReader();
+      reader.onload = async (ev) => {
+        const buffer = ev.target?.result as ArrayBuffer;
+        const rows = parseExcelFile(buffer);
+        const { data: transactions, errors } = parseTransactions(rows, 'BANK');
 
-      const rowCount = transactions.length;
-      setUploaded(true);
-      setBarsReady(true);
-      setLoading(false);
-      setKpis({
-        cashflow: { value: `$${summary.netCashflow.toFixed(2)}`, delta: "Based on historicals" },
-        volatility: { value: summary.anomaliesSummary, delta: "P95 band" },
-        anomalies: { value: String(summary.topCategories.length > 0 ? "Detected" : "None"), delta: "Ask Atlas for details" },
-      });
-      setMessages((m) => [
-        ...m,
-        {
-          role: "ai",
-          content: `✓ **${f.name}** uploaded — ${rowCount} transaction rows parsed. I'm ready. Ask me about your cashflow, forecast, or anomalies.`,
-        },
-      ]);
-    };
-    reader.readAsText(f);
+        if (errors.length > 0 || transactions.length === 0) {
+          alert("Failed to parse Excel file. Please ensure it is a valid .xlsx format.");
+          setLoading(false);
+          return;
+        }
+        processTransactions(transactions, f.name);
+      };
+      reader.readAsArrayBuffer(f);
+    } else {
+      const reader = new FileReader();
+      reader.onload = async (ev) => {
+        const text = (ev.target?.result as string) ?? "";
+        csvTextRef.current = text;
+        const fileType = detectFileType(text);
+        const parsed = Papa.parse(text, { header: true, skipEmptyLines: true });
+        const { data: transactions, errors } = parseTransactions(parsed.data as any[], fileType);
+
+        if (errors.length > 0 || transactions.length === 0) {
+          alert("Failed to parse file. Please ensure it's a valid CSV/JSON bank export.");
+          setLoading(false);
+          return;
+        }
+        processTransactions(transactions, f.name);
+      };
+      reader.readAsText(f);
+    }
+  };
+
+  const processTransactions = (transactions: Transaction[], fileName: string) => {
+    const summary = generateDataSummary(transactions);
+    setDataSummary(summary);
+    
+    const last15 = transactions.slice(-15);
+    const absAmounts = last15.map((t) => Math.abs(t.amount));
+    const max = Math.max(...absAmounts, 1);
+    const realBarHeights = last15.map((t) => Math.round((Math.abs(t.amount) / max) * 100));
+    setBarHeights(realBarHeights);
+
+    const rowCount = transactions.length;
+    setUploaded(true);
+    setBarsReady(true);
+    setLoading(false);
+    setKpis({
+      cashflow: { value: `$${summary.netCashflow.toFixed(2)}`, delta: "Based on historicals" },
+      volatility: { value: summary.anomaliesSummary, delta: "P95 band" },
+      anomalies: { value: String(summary.topCategories.length > 0 ? "Detected" : "None"), delta: "Ask Atlas for details" },
+    });
+    setMessages((m) => [
+      ...m,
+      {
+        role: "ai",
+        content: `✓ **${fileName}** uploaded — ${rowCount} transaction rows parsed. I'm ready. Ask me about your cashflow, forecast, or anomalies.`,
+      },
+    ]);
   };
 
   const send = async (text?: string) => {
