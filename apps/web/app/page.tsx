@@ -4,7 +4,7 @@ import Papa from "papaparse";
 import ReactMarkdown from "react-markdown";
 import { generateDataSummary } from "@/lib/analytics";
 import { parseTransactions, detectFileType, parseExcelFile } from "@/lib/ingest";
-import { Transaction } from "@/lib/types";
+import { Transaction, DataSummary } from "@/lib/types";
 
 interface Message {
   role: "user" | "ai";
@@ -17,10 +17,6 @@ const SUGGESTED = [
   "Which category has the highest outflow?",
   "What is my monthly burn rate?",
 ];
-
-import { DataSummary } from "@/lib/types";
-
-// ...
 
 export default function Home() {
   const [messages, setMessages] = useState<Message[]>([
@@ -129,7 +125,6 @@ export default function Home() {
     if (!q || loading) return;
     setInput("");
     
-    // Add user message and empty assistant message
     const newMessages = [...messages, { role: "user" as const, content: q }];
     setMessages([...newMessages, { role: "ai" as const, content: "" }]);
     setLoading(true);
@@ -175,152 +170,115 @@ export default function Home() {
   return (
     <div className="page">
       <div
-        className={`upload-zone${uploaded ? " done" : ""}`}
+        className={`upload-zone ${uploaded ? "done" : ""}`}
         onClick={() => !uploaded && fileInputRef.current?.click()}
       >
         <input
-            ref={fileInputRef}
-            type="file"
-            accept=".csv,.xlsx,.json,.txt"
-            style={{ display: "none" }}
-            onChange={handleFile}
-          />
-          <div className="upload-label">
-            <div className={`upload-icon${uploaded ? " green" : ""}`}>
+          ref={fileInputRef}
+          type="file"
+          accept=".csv,.xlsx,.json,.txt"
+          style={{ display: "none" }}
+          onChange={handleFile}
+        />
+        <div className="upload-label">
+          <div className={`upload-icon ${uploaded ? "green" : ""}`}>
+            {uploaded
+              ? <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              : <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            }
+          </div>
+          <div>
+            <div className="upload-text-main">
+              {uploaded ? fileName : "Upload transaction data"}
+            </div>
+            <div className="upload-text-sub">
               {uploaded
-                ? <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-                : <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-              }
-            </div>
-            <div>
-              <div className="upload-text-main">
-                {uploaded ? fileName : "Upload transaction data"}
-              </div>
-              <div className="upload-text-sub">
-                {uploaded
-                  ? `${csvTextRef.current ? (csvTextRef.current.split('\n').length - 1) : 0} transaction rows parsed`
-                  : "CSV, XLSX, or JSON · Any bank export format"}
-              </div>
+                ? `${csvTextRef.current ? (csvTextRef.current.split('\\n').length - 1) : 0} transaction rows parsed`
+                : "CSV, XLSX, or JSON · Any bank export format"}
             </div>
           </div>
-          {!uploaded
-            ? <div style={{display: 'flex', gap: '0.5rem'}}>
-                <button className="upload-btn" onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}>Choose file</button>
-                <button 
-                  className="upload-btn" 
-                  style={{background: 'rgba(59, 130, 246, 0.8)'}}
-                  onClick={async (e) => {
-                    e.stopPropagation();
-                    setLoading(true);
-                    try {
-                      const res = await fetch('/data/sample-transactions.csv');
-                      const text = await res.text();
-                      csvTextRef.current = text;
-                      const fileType = detectFileType(text);
-                      const parsed = Papa.parse(text, { header: true, skipEmptyLines: true });
-                      const { data: transactions, errors } = parseTransactions(parsed.data as any[], fileType);
-                      
-                      if (errors.length > 0 || transactions.length === 0) throw new Error("Parse failed");
-                      
-                      processTransactions(transactions, "Sample Data");
-                    } catch (e) {
-                      alert("Failed to load sample data");
-                      setLoading(false);
-                    }
-                  }
-                >
-                  Try Sample
-                </button>
-              </div>
-            : <span className="upload-btn done-btn">✓ Ingested</span>
-          }
         </div>
+      </div>
 
-        {!uploaded ? (
-          <div className="locked">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-              <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-            </svg>
-            Upload a file to unlock KPI cards and the chart
-          </div>
-        ) : (
-          <div className="kpis">
-            {[
-              { label: "30-Day Net Cashflow", val: kpis?.cashflow.value ?? "—", delta: kpis?.cashflow.delta ?? "Ask Atlas for the figure" },
-              { label: "Forecast Volatility", val: kpis?.volatility.value ?? "—", delta: kpis?.volatility.delta ?? "P95 band" },
-              { label: "Anomaly Alerts", val: kpis?.anomalies.value ?? "—", delta: kpis?.anomalies.delta ?? "Ask Atlas to surface them" },
-            ].map((k, i) => (
-              <div key={i} className="kpi">
-                <div className="kpi-label">{k.label}</div>
-                <div className="kpi-val">{k.val}</div>
-                <div className="kpi-delta">{k.delta}</div>
+      {!uploaded ? (
+        <div className="locked">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          </svg>
+          Upload a file to unlock KPI cards and the chart
+        </div>
+      ) : (
+        <div className="kpis">
+          {[
+            { label: "30-Day Net Cashflow", val: kpis?.cashflow.value ?? "—", delta: kpis?.cashflow.delta ?? "Ask Atlas for the figure" },
+            { label: "Forecast Volatility", val: kpis?.volatility.value ?? "—", delta: kpis?.volatility.delta ?? "P95 band" },
+            { label: "Anomaly Alerts", val: kpis?.anomalies.value ?? "—", delta: kpis?.anomalies.delta ?? "Ask Atlas to surface them" },
+          ].map((k, i) => (
+            <div key={i} className="kpi">
+              <div className="kpi-label">{k.label}</div>
+              <div className="kpi-val">{k.val}</div>
+              <div className="kpi-delta">{k.delta}</div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {uploaded && (
+        <div className="chart-wrap">
+          <div className="chart-title">Transaction Volume · Last 15 entries</div>
+          <div className="chart">
+            {barHeights.map((h, i) => (
+              <div key={i} className="bar-bg">
+                <div className="bar-fill" style={{ height: barsReady ? `${h}%` : "0%" }}/>
               </div>
             ))}
           </div>
-        )}
-
-        {uploaded && (
-          <div className="chart-wrap">
-            <div className="chart-title">Transaction Volume · Last 15 entries</div>
-            <div className="chart">
-              {barHeights.map((h, i) => (
-                <div key={i} className="bar-bg">
-                  <div className="bar-fill" style={{ height: barsReady ? `${h}%` : "0%" }}/>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        <div className="divider"/>
-
-        <div className="chat-header-row">
-          <span className="chat-label">AI Copilot · Type your question</span>
-          <span className="chat-badge">Real AI · {uploaded ? "Data loaded" : "Upload first"}</span>
         </div>
+      )}
 
-        <div className="chat-box">
-          <div className="messages">
-            {messages.map((m: Message, i: number) => (
-              <div key={i} className={`msg msg-${m.role}`}>
-                {m.role === 'ai' ? (
-                  <ReactMarkdown components={{
-                    p: ({children}) => <>{children}<br/></>,
-                    ul: ({children}) => <ul style={{listStyle: 'disc', paddingLeft: '20px'}}>{children}</ul>,
-                    strong: ({children}) => <strong>{children}</strong>,
-                    code: ({children}) => <code>{children}</code>
-                  }}>{m.content}</ReactMarkdown>
-                ) : m.content}
-              </div>
-            ))}
-            {loading && (
-              <div className="typing">
-                <div className="dot"/><div className="dot"/><div className="dot"/>
-              </div>
-            )}
-            <div ref={chatEndRef}/>
-          </div>
+      <div className="divider"/>
 
-          {uploaded && (
-            <div className="suggestions">
-              {SUGGESTED.map((s, i) => (
-                <button key={i} className="suggest-btn" onClick={() => send(s)}>{s}</button>
-              ))}
+      <div className="chat-box">
+        <div className="messages">
+          {messages.map((m: Message, i: number) => (
+            <div key={i} className={`msg msg-${m.role}`}>
+              {m.role === 'ai' ? (
+                <ReactMarkdown components={{
+                  p: ({children}) => <>{children}<br/></>,
+                  ul: ({children}) => <ul style={{listStyle: 'disc', paddingLeft: '20px'}}>{children}</ul>,
+                  strong: ({children}) => <strong>{children}</strong>,
+                  code: ({children}) => <code>{children}</code>
+                }}>{m.content}</ReactMarkdown>
+              ) : m.content}
+            </div>
+          ))}
+          {loading && (
+            <div className="typing">
+              <div className="dot"/><div className="dot"/><div className="dot"/>
             </div>
           )}
+          <div ref={chatEndRef}/>
+        </div>
 
-          <div className="input-row">
-            <input
-              className="chat-input"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && !loading && send()}
-              placeholder={uploaded ? "Ask about your cashflow, forecast, anomalies…" : "Upload a file first, then ask Atlas anything…"}
-            />
-            <button className="send-btn" onClick={() => send()} disabled={loading || !input.trim()}>
-              Send
-            </button>
+        {uploaded && (
+          <div className="suggestions">
+            {SUGGESTED.map((s, i) => (
+              <button key={i} className="suggest-btn" onClick={() => send(s)}>{s}</button>
+            ))}
           </div>
+        )}
+
+        <div className="input-row">
+          <input
+            className="chat-input"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && !loading && send()}
+            placeholder={uploaded ? "Ask about your cashflow, forecast, anomalies…" : "Upload a file first, then ask Atlas anything…"}
+          />
+          <button className="send-btn" onClick={() => send()} disabled={loading || !input.trim()}>
+            Send
+          </button>
         </div>
       </div>
     </div>
