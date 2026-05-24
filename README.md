@@ -56,3 +56,4 @@ npm run test
 
 ## Submission Readiness
 The project is fully deployed and ready for judging. All core flows, including grounded AI chat and financial analytics, are verified in production.
+Daily quota contribution.
